@@ -1,4 +1,3 @@
-import './App.css';
 import GalaxyScene from './GalaxyScene';
 
 function App() {
