@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import Spaceship from './Spaceship';
 import './Loader.css';
 
 function GalaxyPoints() {
@@ -79,47 +80,14 @@ function GalaxyPoints() {
   );
 }
 
-function Rocket({ progress }) {
-  const ref = useRef();
-  useFrame(() => {
-    if (ref.current) {
-      ref.current.position.y = -3 + (progress / 100) * 6;
-    }
-  });
-  return (
-    <group ref={ref}>
-      <mesh>
-        <cylinderGeometry args={[0.2, 0.2, 1.2, 32]} />
-        <meshStandardMaterial color="#fff" />
-      </mesh>
-      <mesh position={[0, 0.7, 0]}>
-        <coneGeometry args={[0.2, 0.4, 32]} />
-        <meshStandardMaterial color="#e74c3c" />
-      </mesh>
-      <mesh position={[-0.18, -0.6, 0]} rotation={[0, 0, Math.PI / 4]}>
-        <boxGeometry args={[0.05, 0.3, 0.15]} />
-        <meshStandardMaterial color="#3498db" />
-      </mesh>
-      <mesh position={[0.18, -0.6, 0]} rotation={[0, 0, -Math.PI / 4]}>
-        <boxGeometry args={[0.05, 0.3, 0.15]} />
-        <meshStandardMaterial color="#3498db" />
-      </mesh>
-      <mesh position={[0, -0.9, 0]}>
-        <coneGeometry args={[0.1, 0.3, 16]} />
-        <meshStandardMaterial color="#f1c40f" emissive="#f39c12" emissiveIntensity={0.8} />
-      </mesh>
-    </group>
-  );
-}
-
 const Loader3D = ({ progress, fadeOut }) => (
   <div className={`loader-container${fadeOut ? ' fade-out' : ''}`}>
     <div className="loader3d-canvas-wrapper">
-      <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 80 }}>
         <ambientLight intensity={0.7} />
         <directionalLight position={[5, 5, 5]} intensity={1} />
         <GalaxyPoints />
-        <Rocket progress={progress} />
+        <Spaceship progress={progress} />
       </Canvas>
     </div>
     <div className="loader3d-percentage">{progress}%</div>
