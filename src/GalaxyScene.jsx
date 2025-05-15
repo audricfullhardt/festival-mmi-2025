@@ -46,13 +46,51 @@ const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3,
     // Effet pour mettre à jour la position de la caméra depuis les props
     useEffect(() => {
         if (cameraRef.current && initialAnimationComplete) {
+            // Définir les points de focus pour chaque position de caméra
+            // Ces points déterminent où la caméra regarde à chaque position
+            const lookAtPositions = [
+                { x: 0, y: 0, z: 0 },        // Regarder le centre de la galaxie
+                { x: -1, y: 0, z: 0 },       // Regarder légèrement à gauche
+                { x: 0, y: 0.5, z: 0 },      // Regarder vers le haut 
+                { x: 0.5, y: -0.2, z: 0.3 }, // Regarder vers la droite et légèrement vers le bas
+                { x: 0, y: 0, z: 0.5 }       // Regarder vers l'avant
+            ];
+            
+            // Obtenir l'index du point de focus en fonction de la position de la caméra
+            // Adapter cette logique selon vos besoins spécifiques
+            let focusIndex = 0;
+            if (cameraPosition.x < -1) focusIndex = 1;
+            else if (cameraPosition.y > 3) focusIndex = 2;
+            else if (cameraPosition.x > 2) focusIndex = 3;
+            else if (cameraPosition.z > 5) focusIndex = 4;
+            
+            const targetLookAt = lookAtPositions[focusIndex];
+
+            // Animer la position de la caméra
             gsap.to(cameraRef.current.position, {
                 x: cameraPosition.x,
                 y: cameraPosition.y,
                 z: cameraPosition.z,
-                duration: 1.5,
-                ease: "power2.inOut"
+                duration: 0.5, // Durée plus courte pour que la caméra suive plus étroitement le défilement
+                ease: "power1.out", // Une courbe d'accélération plus réactive
+                overwrite: "auto" // Permet de gérer les animations concurrentes pendant le défilement rapide
             });
+            
+            // Animer la rotation de la caméra pour qu'elle regarde le point de focus
+            const currentTarget = cameraRef.current.target || new THREE.Vector3(0, 0, 0);
+            gsap.to(currentTarget, {
+                x: targetLookAt.x,
+                y: targetLookAt.y,
+                z: targetLookAt.z,
+                duration: 0.8, // Durée légèrement plus longue pour une rotation plus douce
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    cameraRef.current.lookAt(currentTarget);
+                }
+            });
+            
+            // Stocker la cible actuelle pour la prochaine animation
+            cameraRef.current.target = currentTarget;
         }
     }, [cameraPosition, initialAnimationComplete]);
 

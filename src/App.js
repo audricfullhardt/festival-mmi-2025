@@ -22,6 +22,52 @@ function App() {
   const galaxyRef = useRef(null);
   const animationTimeoutRef = useRef(null);
 
+  // Textes aléatoires pour les cartes et les planètes
+  const randomTexts = [
+    {
+      title: "Pianeta Rossa",
+      cardContent: "Monde aride aux vastes déserts et canyons. L'atmosphère y est ténue mais riche en oxyde de fer, donnant à sa surface cette teinte rouge caractéristique. Des tempêtes de poussière gigantesques peuvent parfois envelopper la planète entière pendant des mois.",
+      planetSpec: "Diamètre: 6 792 km\nGravité: 0.38g\nAtmosphère: CO2 (95%)\nTempérature: -63°C"
+    },
+    {
+      title: "Nebulosa Azure",
+      cardContent: "Géante gazeuse aux incroyables nuances de bleu et turquoise. Son atmosphère tumultueuse est parcourue d'éclairs titanesques et de tempêtes qui durent depuis des siècles. Ses anneaux majestueux, composés de glace et de poussière, s'étendent sur des milliers de kilomètres.",
+      planetSpec: "Diamètre: 49 500 km\nGravité: 1.12g\nAtmosphère: H2, He\nTempérature: -145°C"
+    },
+    {
+      title: "Chrysalis Prime",
+      cardContent: "Monde tropical aux océans peu profonds et à la végétation luxuriante. Des montagnes flottantes défient la gravité, suspendues par des champs magnétiques naturels. La faune y est principalement aquatique ou volante, adaptée à l'environnement unique de la planète.",
+      planetSpec: "Diamètre: 12 104 km\nGravité: 0.91g\nAtmosphère: N2, O2\nTempérature: +27°C"
+    }
+  ];
+
+  // Textes narratifs pour les sections intermédiaires
+  const storyTexts = [
+    "Notre vaisseau s'éloigne de Pianeta Rossa, laissant derrière lui les tempêtes de poussière rouge qui dansent sur les vastes plaines désolées.\n\nLe voyage à travers le vide interstellaire commence. Les étoiles défilent comme des traces lumineuses tandis que nous nous dirigeons vers notre prochaine destination...",
+    "Après avoir navigué à travers les anneaux majestueux de Nebulosa Azure, notre vaisseau plonge dans l'espace profond.\n\nLe vide devient plus dense, presque palpable, alors que nous nous rapprochons de notre destination finale, un joyau vert-bleu qui brille dans l'obscurité cosmique."
+  ];
+
+  // Créer un tableau combiné de sections de planètes et de texte
+  const combinedSections = [];
+  randomTexts.forEach((planetData, index) => {
+    // Ajouter section de planète
+    combinedSections.push({
+      type: 'planet',
+      data: planetData,
+      index
+    });
+    
+    // Ajouter section de texte après chaque planète (sauf la dernière)
+    if (index < randomTexts.length - 1) {
+      combinedSections.push({
+        type: 'text',
+        text: storyTexts[index],
+        index: `text-${index}`
+      });
+    }
+  });
+
+  // Effet pour charger et gérer le pourcentage
   useEffect(() => {
     if (loading) {
       let current = 0;
@@ -40,6 +86,7 @@ function App() {
     }
   }, [loading]);
 
+  // Effet pour terminer le chargement
   useEffect(() => {
     if (fadeOut) {
       const timer = setTimeout(() => {
@@ -50,6 +97,7 @@ function App() {
     }
   }, [fadeOut]);
 
+  // Effet pour contrôler l'affichage du titre avec un délai après le chargement
   useEffect(() => {
     if (!loading) {
       // Attendre la fin de l'animation de galaxie
@@ -100,6 +148,7 @@ function App() {
     }
   }, [loading]);
 
+  // Effet pour gérer le défilement et les animations de caméra
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -113,66 +162,80 @@ function App() {
       const totalHeight = document.body.scrollHeight - window.innerHeight;
       const scrollProgress = window.scrollY / totalHeight;
       
-      const newCameraPositions = [
-        { x: 3, y: 3, z: 3 },             // Position initiale
-        { x: -2, y: 4, z: 5 },            // Vers première planète
-        { x: 6, y: -2, z: 4 },            // Vers deuxième planète
-        { x: -1, y: 5, z: 6 }             // Vers troisième planète
+      // Parcours cinématique avec variations dramatiques de positions et angles
+      const cinematicPath = [
+        { x: 3, y: 3, z: 3 },             // Vue d'ensemble initiale
+        { x: 4, y: 1.5, z: 0 },           // Plongée rapide vers le centre
+        { x: 0, y: 0.5, z: -1 },          // Passage au cœur de la galaxie
+        { x: -3, y: 1, z: 1 },            // Sortie et virage vers la gauche
+        { x: -5, y: 4, z: 5 },            // Vue en hauteur de la première planète
+        { x: -2, y: 3, z: 6 },            // Virage autour de la première planète
+        { x: -3, y: 0, z: 3 },            // Descente et passage près de la surface
+        { x: 0, y: -2, z: 0 },            // Plongée sous la galaxie
+        { x: 4, y: -3, z: 2 },            // Remontée vers la deuxième planète
+        { x: 6, y: -1, z: 5 },            // Vue latérale de la deuxième planète
+        { x: 5, y: 1, z: 7 },             // Passage au-dessus de la deuxième planète
+        { x: 1, y: 0, z: 8 },             // Transition vers la dernière planète
+        { x: -2, y: 2, z: 6 },            // Arrivée vers la troisième planète
+        { x: -1, y: 5, z: 6 },            // Vue en plongée de la troisième planète
+        { x: 2, y: 3, z: 7 }              // Position finale avec vue d'ensemble
       ];
       
-      const scrollThresholds = [0, 0.25, 0.5, 0.75, 1];
-      let currentSection = 0;
+      // Calculer l'index de la position dans le parcours en fonction du progrès
+      const pathProgress = scrollProgress * (cinematicPath.length - 1);
+      const currentIndex = Math.floor(pathProgress);
+      const nextIndex = Math.min(currentIndex + 1, cinematicPath.length - 1);
+      const segmentProgress = pathProgress - currentIndex;
       
-      for (let i = 0; i < scrollThresholds.length - 1; i++) {
-        if (scrollProgress >= scrollThresholds[i] && scrollProgress < scrollThresholds[i + 1]) {
-          currentSection = i;
-          break;
+      // Fonction d'interpolation avancée pour des transitions plus dynamiques
+      const customEase = (t) => {
+        // Combinaison de fonctions d'accélération pour un effet de caméra cinématique
+        if (t < 0.3) {
+          // Démarrage lent
+          return 3 * t * t / 0.9;
+        } else if (t < 0.7) {
+          // Partie centrale fluide
+          return 0.3 + (t - 0.3) * 1.25;
+        } else {
+          // Ralentissement à l'arrivée
+          const x = (t - 0.7) / 0.3;
+          return 0.8 + 0.2 * (1 - (1 - x) * (1 - x));
         }
-      }
+      };
       
-      const sectionProgress = (scrollProgress - scrollThresholds[currentSection]) / 
-                              (scrollThresholds[currentSection + 1] - scrollThresholds[currentSection]);
+      // Appliquer l'interpolation personnalisée
+      const easedProgress = customEase(segmentProgress);
       
-      if (currentSection < newCameraPositions.length - 1) {
-        const start = newCameraPositions[currentSection];
-        const end = newCameraPositions[currentSection + 1];
-        
-        setCameraPosition({
-          x: start.x + (end.x - start.x) * sectionProgress,
-          y: start.y + (end.y - start.y) * sectionProgress,
-          z: start.z + (end.z - start.z) * sectionProgress
+      // Interpoler entre les points actuels et suivants
+      const startPos = cinematicPath[currentIndex];
+      const endPos = cinematicPath[nextIndex];
+      
+      // Calculer la nouvelle position avec l'interpolation
+      setCameraPosition({
+        x: startPos.x + (endPos.x - startPos.x) * easedProgress,
+        y: startPos.y + (endPos.y - startPos.y) * easedProgress,
+        z: startPos.z + (endPos.z - startPos.z) * easedProgress
+      });
+    };
+
+    // Appeler handleScroll une fois immédiatement pour initialiser la position de la caméra
+    handleScroll();
+    
+    // Utiliser requestAnimationFrame pour une animation plus fluide pendant le défilement
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
         });
+        ticking = true;
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Textes aléatoires pour les cartes et les planètes
-  const randomTexts = [
-    {
-      title: "Pianeta Rossa",
-      cardContent: "Monde aride aux vastes déserts et canyons. L'atmosphère y est ténue mais riche en oxyde de fer, donnant à sa surface cette teinte rouge caractéristique. Des tempêtes de poussière gigantesques peuvent parfois envelopper la planète entière pendant des mois.",
-      planetSpec: "Diamètre: 6 792 km\nGravité: 0.38g\nAtmosphère: CO2 (95%)\nTempérature: -63°C"
-    },
-    {
-      title: "Nebulosa Azure",
-      cardContent: "Géante gazeuse aux incroyables nuances de bleu et turquoise. Son atmosphère tumultueuse est parcourue d'éclairs titanesques et de tempêtes qui durent depuis des siècles. Ses anneaux majestueux, composés de glace et de poussière, s'étendent sur des milliers de kilomètres.",
-      planetSpec: "Diamètre: 49 500 km\nGravité: 1.12g\nAtmosphère: H2, He\nTempérature: -145°C"
-    },
-    {
-      title: "Chrysalis Prime",
-      cardContent: "Monde tropical aux océans peu profonds et à la végétation luxuriante. Des montagnes flottantes défient la gravité, suspendues par des champs magnétiques naturels. La faune y est principalement aquatique ou volante, adaptée à l'environnement unique de la planète.",
-      planetSpec: "Diamètre: 12 104 km\nGravité: 0.91g\nAtmosphère: N2, O2\nTempérature: +27°C"
-    }
-  ];
-
-  // Textes narratifs pour les sections intermédiaires
-  const storyTexts = [
-    "Notre vaisseau s'éloigne de Pianeta Rossa, laissant derrière lui les tempêtes de poussière rouge qui dansent sur les vastes plaines désolées.\n\nLe voyage à travers le vide interstellaire commence. Les étoiles défilent comme des traces lumineuses tandis que nous nous dirigeons vers notre prochaine destination...",
-    "Après avoir navigué à travers les anneaux majestueux de Nebulosa Azure, notre vaisseau plonge dans l'espace profond.\n\nLe vide devient plus dense, presque palpable, alors que nous nous rapprochons de notre destination finale, un joyau vert-bleu qui brille dans l'obscurité cosmique."
-  ];
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [combinedSections]);
 
   const handleScrollToSection = (index) => {
     if (sectionsRef.current[index]) {
@@ -185,26 +248,6 @@ function App() {
   if (loading) {
     return <Loader3D progress={progress} fadeOut={fadeOut} />;
   }
-
-  // Créer un tableau combiné de sections de planètes et de texte
-  const combinedSections = [];
-  randomTexts.forEach((planetData, index) => {
-    // Ajouter section de planète
-    combinedSections.push({
-      type: 'planet',
-      data: planetData,
-      index
-    });
-    
-    // Ajouter section de texte après chaque planète (sauf la dernière)
-    if (index < randomTexts.length - 1) {
-      combinedSections.push({
-        type: 'text',
-        text: storyTexts[index],
-        index: `text-${index}`
-      });
-    }
-  });
 
   return (
     <div className="App" style={{ position: 'relative' }} ref={appRef}>
