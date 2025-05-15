@@ -160,6 +160,8 @@ function App() {
       }
       
       const totalHeight = document.body.scrollHeight - window.innerHeight;
+      if (totalHeight <= 0) return;
+
       const scrollProgress = window.scrollY / totalHeight;
       
       // Parcours cinématique avec variations dramatiques de positions et angles
@@ -181,11 +183,15 @@ function App() {
         { x: 2, y: 3, z: 7 }              // Position finale avec vue d'ensemble
       ];
       
-      // Calculer l'index de la position dans le parcours en fonction du progrès
-      const pathProgress = scrollProgress * (cinematicPath.length - 1);
+      const pathLength = cinematicPath.length;
+      const pathProgress = scrollProgress * (pathLength - 1);
       const currentIndex = Math.floor(pathProgress);
-      const nextIndex = Math.min(currentIndex + 1, cinematicPath.length - 1);
-      const segmentProgress = pathProgress - currentIndex;
+      const nextIndex = Math.min(currentIndex + 1, pathLength - 1);
+      
+      const startPos = cinematicPath[currentIndex];
+      const endPos = cinematicPath[nextIndex];
+      
+      if (!startPos || !endPos) return;
       
       // Fonction d'interpolation avancée pour des transitions plus dynamiques
       const customEase = (t) => {
@@ -204,13 +210,9 @@ function App() {
       };
       
       // Appliquer l'interpolation personnalisée
-      const easedProgress = customEase(segmentProgress);
+      const easedProgress = customEase(pathProgress - currentIndex);
       
       // Interpoler entre les points actuels et suivants
-      const startPos = cinematicPath[currentIndex];
-      const endPos = cinematicPath[nextIndex];
-      
-      // Calculer la nouvelle position avec l'interpolation
       setCameraPosition({
         x: startPos.x + (endPos.x - startPos.x) * easedProgress,
         y: startPos.y + (endPos.y - startPos.y) * easedProgress,
