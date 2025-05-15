@@ -170,17 +170,17 @@ const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3,
                             // Premier nom - affichage direct
                             setTimeout(() => {
                                 setTextNames(prev => [names[0], prev[1], prev[2]]);
-                            }, 300);
+                            }, 600);
                             
                             // Deuxième nom - affichage direct
                             setTimeout(() => {
                                 setTextNames(prev => [prev[0], names[1], prev[2]]);
-                            }, 800);
+                            }, 1200);
                             
                             // Troisième nom - affichage direct
                             setTimeout(() => {
                                 setTextNames(prev => [prev[0], prev[1], names[2]]);
-                            }, 1300);
+                            }, 1800);
                         }
                     });
                     
@@ -191,7 +191,7 @@ const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3,
                             x: 3,
                             y: 3,
                             z: 3,
-                            duration: 7, // Durée plus longue pour effet cinématique
+                            duration: 10, // Durée plus longue pour effet cinématique
                             ease: "power2.out",
                             onStart: () => {
                                 // Programmer l'affichage du titre à 50% (3.5 secondes) après le début du dézoom
@@ -202,7 +202,7 @@ const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3,
                                     
                                     // Émettre un événement pour indiquer que nous sommes à 50% de l'animation
                                     window.dispatchEvent(new CustomEvent('galaxyAnimation50Percent'));
-                                }, 3500); // 3.5 secondes = ~50% de l'animation de 7 secondes
+                                }, 4500); // 4.5 secondes = ~50% de l'animation de 10 secondes
                             },
                             onComplete: () => {
                                 // Réactiver les contrôles après l'animation
@@ -242,7 +242,7 @@ const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3,
                                 camera.lookAt(cameraTarget);
                             }
                         });
-                    }, 3000); // Pause de 3 secondes pendant laquelle on voit les crédits
+                    }, 4500); // Pause de 5 secondes pendant laquelle on voit les crédits
                 }
             });
         }
