@@ -1,352 +1,267 @@
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { createGalaxy } from './galaxy'
-import { gsap } from 'gsap'
-import { TextPlugin } from 'gsap/TextPlugin'
-import Button from './components/Button.jsx'
-
-const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3, z: 3 } }, ref) => {
-    // Initialiser TextPlugin de GSAP
-    gsap.registerPlugin(TextPlugin);
-    
-    const canvasRef = useRef()
-    const cameraRef = useRef()
-    const controlsRef = useRef()
-    const [animationStarted, setAnimationStarted] = useState(false)
-    const [showCredits, setShowCredits] = useState(false)
-    const [showTitle, setShowTitle] = useState(false)
-    const [creditsOpacity, setCreditsOpacity] = useState(0)
-    const [creditsScale, setCreditsScale] = useState(1)
-    const [textPar, setTextPar] = useState('')
-    const [textNames, setTextNames] = useState(['', '', ''])
-    const [initialAnimationComplete, setInitialAnimationComplete] = useState(false)
-
-    // Exposer certaines méthodes pour le parent
-    useImperativeHandle(ref, () => ({
-        getCamera: () => cameraRef.current,
+import {
+    useEffect,
+    useRef,
+    useState,
+    forwardRef,
+    useImperativeHandle
+  } from 'react';
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+  import { createGalaxy } from './galaxy';
+  import { gsap } from 'gsap';
+  import { TextPlugin } from 'gsap/TextPlugin';
+  
+  const GalaxyScene = forwardRef(
+    (
+      {
+        hideUI = false,                              // conservé si besoin
+        cameraPosition = { x: 3, y: 3, z: 3 },       // MAJ par App
+        cameraTarget = { x: 0, y: 0, z: 0 }          // Ajouté pour recevoir la target depuis App
+      },
+      ref
+    ) => {
+      gsap.registerPlugin(TextPlugin);
+  
+      /* refs & états -------------------------------------------------- */
+      const canvasRef   = useRef();
+      const cameraRef   = useRef();
+      const controlsRef = useRef();
+      const targetRef   = useRef(new THREE.Vector3());
+  
+      const [introDone,   setIntroDone]   = useState(false);
+      const [showCredits, setShowCredits] = useState(false);
+      const [creditsOp,   setCreditsOp]   = useState(0);
+      const [creditsSc,   setCreditsSc]   = useState(1);
+      const [textPar,     setTextPar]     = useState('');
+      const [textNames,   setTextNames]   = useState(['', '', '']);
+  
+      /* exposer cam & controls --------------------------------------- */
+      useImperativeHandle(ref, () => ({
+        getCamera:   () => cameraRef.current,
         getControls: () => controlsRef.current
-    }));
-
-    const scrollToContent = () => {
-        // Pour scroll à la première section de planète
-        const planetSections = document.querySelectorAll('.App > section');
-        if (planetSections.length >= 2) {
-            // La deuxième section est la première section de planète (index 1)
-            planetSections[1].scrollIntoView({ behavior: 'smooth' });
+      }));
+  
+      /* MAJ position / look-ahead après intro ------------------------ */
+      useEffect(() => {
+        if (!introDone || !cameraRef.current) return;
+  
+        /* position */
+        gsap.to(cameraRef.current.position, {
+          ...cameraPosition,
+          duration: 0.9,
+          ease: 'power2.out'
+        });
+  
+        /* Utiliser directement cameraTarget si fourni */
+        if (cameraTarget) {
+          targetRef.current.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
         } else {
-            // Fallback au cas où la structure DOM est différente
-            window.scrollTo({
-                top: window.innerHeight,
-                behavior: 'smooth'
-            });
+          /* look-ahead (fallback) */
+          const last = cameraRef.current.userData.lastPos || cameraPosition;
+          const dir = new THREE.Vector3(
+            cameraPosition.x - last.x,
+            cameraPosition.y - last.y,
+            cameraPosition.z - last.z
+          );
+          if (dir.length() > 0.01) dir.normalize();
+          const ahead = {
+            x: cameraPosition.x + dir.x * 2,
+            y: cameraPosition.y + dir.y * 2,
+            z: cameraPosition.z + dir.z * 2
+          };
+          targetRef.current.set(ahead.x, ahead.y, ahead.z);
         }
-    }
-
-    // Effet pour mettre à jour la position de la caméra depuis les props
-    useEffect(() => {
-        if (cameraRef.current && initialAnimationComplete) {
-            // Définir les points de focus pour chaque position de caméra
-            // Ces points déterminent où la caméra regarde à chaque position
-            const lookAtPositions = [
-                { x: 0, y: 0, z: 0 },        // Regarder le centre de la galaxie
-                { x: -1, y: 0, z: 0 },       // Regarder légèrement à gauche
-                { x: 0, y: 0.5, z: 0 },      // Regarder vers le haut 
-                { x: 0.5, y: -0.2, z: 0.3 }, // Regarder vers la droite et légèrement vers le bas
-                { x: 0, y: 0, z: 0.5 }       // Regarder vers l'avant
-            ];
-            
-            // Obtenir l'index du point de focus en fonction de la position de la caméra
-            // Adapter cette logique selon vos besoins spécifiques
-            let focusIndex = 0;
-            if (cameraPosition.x < -1) focusIndex = 1;
-            else if (cameraPosition.y > 3) focusIndex = 2;
-            else if (cameraPosition.x > 2) focusIndex = 3;
-            else if (cameraPosition.z > 5) focusIndex = 4;
-            
-            const targetLookAt = lookAtPositions[focusIndex];
-
-            // Animer la position de la caméra
-            gsap.to(cameraRef.current.position, {
-                x: cameraPosition.x,
-                y: cameraPosition.y,
-                z: cameraPosition.z,
-                duration: 0.5, // Durée plus courte pour que la caméra suive plus étroitement le défilement
-                ease: "power1.out", // Une courbe d'accélération plus réactive
-                overwrite: "auto" // Permet de gérer les animations concurrentes pendant le défilement rapide
-            });
-            
-            // Animer la rotation de la caméra pour qu'elle regarde le point de focus
-            const currentTarget = cameraRef.current.target || new THREE.Vector3(0, 0, 0);
-            gsap.to(currentTarget, {
-                x: targetLookAt.x,
-                y: targetLookAt.y,
-                z: targetLookAt.z,
-                duration: 0.8, // Durée légèrement plus longue pour une rotation plus douce
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    cameraRef.current.lookAt(currentTarget);
+        cameraRef.current.userData.lastPos = { ...cameraPosition };
+      }, [cameraPosition, cameraTarget, introDone]);
+  
+      /* INIT THREE ---------------------------------------------------- */
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        const scene  = new THREE.Scene();
+  
+        /* camera & renderer */
+        const sizes = { w: window.innerWidth, h: window.innerHeight };
+        const camera = new THREE.PerspectiveCamera(75, sizes.w / sizes.h, 0.1, 100);
+        camera.position.set(0, 0, 0.1);
+        scene.add(camera);
+        cameraRef.current = camera;
+  
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+        renderer.setSize(sizes.w, sizes.h);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  
+        /* controls */
+        const controls = new OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.enabled       = false;
+        controlsRef.current    = controls;
+  
+        /* galaxie */
+        createGalaxy(scene);
+  
+        /* ---------------- intro (code d’origine) -------------------- */
+        const cameraTarget = new THREE.Vector3(0, 0, 0);
+        camera.lookAt(cameraTarget);
+  
+        const names = ['Jules Crevoisier', 'Audric FULLHARDT', 'Gabriel MAILLARD'];
+  
+        const intro = () => {
+          gsap.to(camera.position, {
+            x: 0.5, y: 0.2, z: 0.5,
+            duration: 2,
+            ease: 'power1.inOut',
+            onComplete: () => {
+              /* crédits IN */
+              setShowCredits(true);
+              gsap.to({ p: 0 }, {
+                p: 1,
+                duration: 1.2,
+                ease: 'none',
+                onUpdate() {
+                  const p = this.targets()[0].p;
+                  setCreditsOp(p);
+                  setCreditsSc(0.7 + p * 0.3);
                 }
-            });
-            
-            // Stocker la cible actuelle pour la prochaine animation
-            cameraRef.current.target = currentTarget;
-        }
-    }, [cameraPosition, initialAnimationComplete]);
-
-    useEffect(() => {
-        const canvas = canvasRef.current
-        const scene = new THREE.Scene()
-        const sizes = {
-            width: window.innerWidth,
-            height: window.innerHeight
-        }
-
-        // Camera
-        const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-        // Position initiale au centre de la galaxie (zoom)
-        camera.position.set(0, 0, 0.1)
-        scene.add(camera)
-        cameraRef.current = camera
-
-        // Cible initiale
-        const cameraTarget = new THREE.Vector3(0, 0, 0)
-        camera.lookAt(cameraTarget)
-
-        // Renderer
-        const renderer = new THREE.WebGLRenderer({ 
-            canvas,
-            alpha: true 
-        })
-        renderer.setSize(sizes.width, sizes.height)
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-        // Controls
-        const controls = new OrbitControls(camera, canvas)
-        controls.enableDamping = true
-        controls.enabled = false // Désactiver les contrôles pendant l'animation
-        controlsRef.current = controls
-
-        // Create galaxy...
-        const galaxy = createGalaxy(scene)
-
-        const clock = new THREE.Clock()
-
-        // Animation de dézoom
-        const startAnimation = () => {
-            setAnimationStarted(true)
-            
-            // Animation initiale immédiate
-            gsap.to(camera.position, {
-                x: 0.5,
-                y: 0.2,
-                z: 0.5,
-                duration: 2,
-                ease: "power1.inOut",
-                onComplete: () => {
-                    // Afficher les crédits immédiatement sans animation de fondu
-                    setShowCredits(true);
-                    setCreditsOpacity(0); // Commencer avec opacité zéro
-                    
-                    // Animation cinématique des crédits
-                    gsap.to({}, {
-                        duration: 1.2,
-                        onUpdate: () => {
-                            const progress = Math.min(1, gsap.ticker.time / 1.2);
-                            setCreditsOpacity(progress);
-                            setCreditsScale(0.7 + (progress * 0.3)); // Effet de zoom (de 70% à 100%)
-                        }
-                    });
-                    
-                    // Animation d'apparition du texte "par"
-                    gsap.to({}, {
-                        duration: 0.8,
-                        onComplete: () => {
-                            setTextPar('par');
-                            
-                            // Animation d'apparition des noms un par un
-                            const names = ['Jules Crevoisier', 'Audric FULLHARDT', 'Gabriel MAILLARD'];
-                            
-                            // Premier nom - affichage direct
-                            setTimeout(() => {
-                                setTextNames(prev => [names[0], prev[1], prev[2]]);
-                            }, 600);
-                            
-                            // Deuxième nom - affichage direct
-                            setTimeout(() => {
-                                setTextNames(prev => [prev[0], names[1], prev[2]]);
-                            }, 1200);
-                            
-                            // Troisième nom - affichage direct
-                            setTimeout(() => {
-                                setTextNames(prev => [prev[0], prev[1], names[2]]);
-                            }, 1800);
-                        }
-                    });
-                    
-                    // Pause de 3 secondes avant de continuer le dézoom
+              });
+              /* texte 'par' + noms */
+              setTimeout(() => {
+                setTextPar('par');
+                setTimeout(() => setTextNames([names[0], '', '']), 600);
+                setTimeout(() => setTextNames([names[0], names[1], '']), 1200);
+                setTimeout(() => setTextNames(names), 1800);
+              }, 800);
+  
+              /* pause 4.5 s puis grand dézoom */
+              setTimeout(() => {
+                // Animer vers la position finale de l'intro
+                gsap.to(camera.position, {
+                  x: 3, y: 3, z: 3,
+                  duration: 10,
+                  ease: 'power2.out',
+                  onStart: () =>
+                    setTimeout(
+                      () => window.dispatchEvent(new CustomEvent('galaxyAnimation50Percent')),
+                      4500
+                    ),
+                  onUpdate: () => {
+                    // S'assurer que la caméra pointe vers le centre pendant toute l'animation
+                    camera.lookAt(0, 0, 0);
+                  },
+                  onComplete: () => {
+                    // Faire une pause avant de déclencher l'événement de fin
                     setTimeout(() => {
-                        // Animation de dézoom principal
-                        gsap.to(camera.position, {
-                            x: 3,
-                            y: 3,
-                            z: 3,
-                            duration: 10, // Durée plus longue pour effet cinématique
-                            ease: "power2.out",
-                            onStart: () => {
-                                // Programmer l'affichage du titre à 50% (3.5 secondes) après le début du dézoom
-                                setTimeout(() => {
-                                    console.log("Affichage du titre à 50% de l'animation");
-                                    setShowCredits(false);
-                                    setShowTitle(true);
-                                    
-                                    // Émettre un événement pour indiquer que nous sommes à 50% de l'animation
-                                    window.dispatchEvent(new CustomEvent('galaxyAnimation50Percent'));
-                                }, 4500); // 4.5 secondes = ~50% de l'animation de 10 secondes
-                            },
-                            onComplete: () => {
-                                // Réactiver les contrôles après l'animation
-                                controls.enabled = true;
-                                
-                                // Garantir que le titre est affiché
-                                setShowCredits(false);
-                                setShowTitle(true);
-                                
-                                // Marquer l'animation initiale comme terminée
-                                setInitialAnimationComplete(true);
-                                
-                                // Émettre un événement personnalisé pour App.js
-                                window.dispatchEvent(new CustomEvent('galaxyAnimationComplete'));
-                            }
-                        });
-
-                        // Animation des crédits qui s'éloignent
-                        gsap.to({}, {
-                            duration: 4.5,
-                            onUpdate: () => {
-                                const progress = Math.min(1, gsap.ticker.time / 4.5);
-                                setCreditsScale(1 - progress * 0.5);
-                                if (progress > 0.7) {
-                                    setCreditsOpacity(1 - ((progress - 0.7) / 0.3));
-                                }
-                            }
-                        });
-
-                        // Animation de rotation de la caméra pendant le dézoom
-                        gsap.to(cameraTarget, {
-                            x: 0.5,
-                            y: 0.2,
-                            duration: 7,
-                            ease: "power1.inOut",
-                            onUpdate: () => {
-                                camera.lookAt(cameraTarget);
-                            }
-                        });
-                    }, 4500); // Pause de 5 secondes pendant laquelle on voit les crédits
-                }
-            });
-        }
-
-        // Démarrer l'animation immédiatement
-        startAnimation();
-
-        let animationFrameId
+                      setIntroDone(true);
+                      setShowCredits(false);
+                      window.dispatchEvent(new CustomEvent('galaxyAnimationComplete'));
+                    }, 500);
+                  }
+                });
+  
+                /* crédits OUT */
+                gsap.to({ p: 0 }, {
+                  p: 1,
+                  duration: 4.5,
+                  ease: 'none',
+                  onUpdate() {
+                    const p = this.targets()[0].p;
+                    setCreditsSc(1 - p * 0.5);
+                    if (p > 0.7) setCreditsOp(1 - (p - 0.7) / 0.3);
+                  }
+                });
+  
+                /* légère rotation de visée */
+                gsap.to(cameraTarget, {
+                  x: 0.5, y: 0.2,
+                  duration: 7,
+                  ease: 'power1.inOut',
+                  onUpdate: () => camera.lookAt(cameraTarget)
+                });
+              }, 4500);
+            }
+          });
+        };
+        intro();
+  
+        /* render loop ------------------------------------------------- */
+        let id;
         const tick = () => {
-            const elapsedTime = clock.getElapsedTime()
-            controls.update()
-            renderer.render(scene, camera)
-            animationFrameId = requestAnimationFrame(tick)
-        }
-
-        tick()
-
-        // Resize handler
-        const handleResize = () => {
-            sizes.width = window.innerWidth
-            sizes.height = window.innerHeight
-            camera.aspect = sizes.width / sizes.height
-            camera.updateProjectionMatrix()
-            renderer.setSize(sizes.width, sizes.height)
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-        }
-
-        window.addEventListener('resize', handleResize)
-
+          if (introDone) {
+            // En mode défilement, la caméra pointe vers la cible calculée
+            camera.lookAt(targetRef.current);
+          } else {
+            // Pendant l'intro, on laisse l'animation GSAP contrôler la caméra
+            // Mais on s'assure que les contrôles sont à jour (bien que désactivés)
+            controls.update();
+          }
+          renderer.render(scene, camera);
+          id = requestAnimationFrame(tick);
+        };
+        tick();
+  
+        /* resize */
+        const onResize = () => {
+          sizes.w = window.innerWidth;
+          sizes.h = window.innerHeight;
+          camera.aspect = sizes.w / sizes.h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(sizes.w, sizes.h);
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        };
+        window.addEventListener('resize', onResize);
+  
         return () => {
-            // Cleanup
-            cancelAnimationFrame(animationFrameId)
-            window.removeEventListener('resize', handleResize)
-            controls.dispose()
-            renderer.dispose()
-            scene.clear()
-        }
-    }, [])
-
-    return (
+          cancelAnimationFrame(id);
+          window.removeEventListener('resize', onResize);
+          controls.dispose();
+          renderer.dispose();
+          scene.clear();
+        };
+      }, [introDone]);
+  
+      /* JSX ----------------------------------------------------------- */
+      return (
         <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
-            <canvas 
-                ref={canvasRef} 
-                className="webgl" 
-                style={{ pointerEvents: 'none' }} // Permettre de cliquer à travers le canvas
-            />
-            
-            {showCredits && (
-                <div 
-                    style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: `translate(-50%, -50%) scale(${creditsScale})`,
-                        color: 'white',
-                        textAlign: 'center',
-                        fontFamily: "'Orbitron', sans-serif",
-                        opacity: creditsOpacity,
-                        transition: 'transform 0.5s ease',
-                        zIndex: 1000
-                    }}
+          <canvas ref={canvasRef} className="webgl" style={{ pointerEvents: 'none' }} />
+  
+          {showCredits && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: `translate(-50%, -50%) scale(${creditsSc})`,
+                color: 'white',
+                textAlign: 'center',
+                fontFamily: "'Orbitron', sans-serif",
+                opacity: creditsOp,
+                zIndex: 1000
+              }}
+            >
+              <style>{`
+                @keyframes glow{0%{text-shadow:0 0 5px #fff}50%{text-shadow:0 0 15px #fff}100%{text-shadow:0 0 5px #fff}}
+                .glow{animation:glow 2s infinite}
+              `}</style>
+              <p style={{ fontSize: '2rem', margin: 0, letterSpacing: 2 }}>
+                <span className="glow">{textPar}</span><br/>
+                <span
+                  style={{
+                    fontSize: '2.5rem',
+                    background: 'linear-gradient(#fff,#a0a0ff)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}
                 >
-                    <style>
-                        {`
-                            @keyframes glowing {
-                                0% { text-shadow: 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(120,120,255,0.4); }
-                                50% { text-shadow: 0 0 15px rgba(255,255,255,0.9), 0 0 25px rgba(120,120,255,0.6); }
-                                100% { text-shadow: 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(120,120,255,0.4); }
-                            }
-                            
-                            .text-reveal {
-                                animation: glowing 2s infinite;
-                            }
-                        `}
-                    </style>
-                    <p style={{ 
-                        fontSize: '2rem', 
-                        margin: '0',
-                        padding: '0',
-                        letterSpacing: '2px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        lineHeight: '1.5'
-                    }}>
-                        <span className="text-reveal">{textPar}</span><br/>
-                        <span style={{ 
-                            fontSize: '2.5rem', 
-                            background: 'linear-gradient(to bottom, #ffffff, #a0a0ff)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            display: 'inline-block',
-                            padding: '10px 0'
-                        }}>
-                            <span className="text-reveal">{textNames[0]}</span><br/>
-                            <span className="text-reveal">{textNames[1]}</span><br/>
-                            <span className="text-reveal">{textNames[2]}</span>
-                        </span>
-                    </p>
-                </div>
-            )}
-            
-            {/* Interface de titre désactivée - maintenant gérée par App.js */}
+                  <span className="glow">{textNames[0]}</span><br/>
+                  <span className="glow">{textNames[1]}</span><br/>
+                  <span className="glow">{textNames[2]}</span>
+                </span>
+              </p>
+            </div>
+          )}
         </div>
-    )
-})
-
-export default GalaxyScene
+      );
+    }
+  );
+  
+  export default GalaxyScene;
+  
