@@ -156,12 +156,15 @@ const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3,
                             duration: 7, // Durée plus longue pour effet cinématique
                             ease: "power2.out",
                             onStart: () => {
-                                // Programmer l'affichage du titre 5 secondes après le début du dézoom
+                                // Programmer l'affichage du titre à 50% (3.5 secondes) après le début du dézoom
                                 setTimeout(() => {
-                                    console.log("Affichage du titre");
+                                    console.log("Affichage du titre à 50% de l'animation");
                                     setShowCredits(false);
                                     setShowTitle(true);
-                                }, 5000); // 5 secondes = ~2 secondes avant la fin de l'animation de 7 secondes
+                                    
+                                    // Émettre un événement pour indiquer que nous sommes à 50% de l'animation
+                                    window.dispatchEvent(new CustomEvent('galaxyAnimation50Percent'));
+                                }, 3500); // 3.5 secondes = ~50% de l'animation de 7 secondes
                             },
                             onComplete: () => {
                                 // Réactiver les contrôles après l'animation
@@ -173,6 +176,9 @@ const GalaxyScene = forwardRef(({ hideUI = false, cameraPosition = { x: 3, y: 3,
                                 
                                 // Marquer l'animation initiale comme terminée
                                 setInitialAnimationComplete(true);
+                                
+                                // Émettre un événement personnalisé pour App.js
+                                window.dispatchEvent(new CustomEvent('galaxyAnimationComplete'));
                             }
                         });
 

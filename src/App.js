@@ -5,6 +5,7 @@ import GalaxyScene from './GalaxyScene';
 import React, { useState, useEffect, useRef } from 'react';
 import Loader3D from './components/Loader3D.jsx';
 import PlanetSection from './components/PlanetSection';
+import TextSection from './components/TextSection';
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -12,10 +13,14 @@ function App() {
   const [fadeOut, setFadeOut] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [hideGalaxyUI, setHideGalaxyUI] = useState(false);
+  const [showTitleAndButton, setShowTitleAndButton] = useState(false);
+  const [titleOpacity, setTitleOpacity] = useState(0);
+  const [titleTransform, setTitleTransform] = useState('translateY(20px)');
   const [cameraPosition, setCameraPosition] = useState({ x: 3, y: 3, z: 3 });
   const sectionsRef = useRef([]);
   const appRef = useRef(null);
   const galaxyRef = useRef(null);
+  const animationTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (loading) {
@@ -37,28 +42,77 @@ function App() {
 
   useEffect(() => {
     if (fadeOut) {
-      const timer = setTimeout(() => setLoading(false), 600);
+      const timer = setTimeout(() => {
+        setLoading(false);
+        setShowTitleAndButton(false);
+      }, 600);
       return () => clearTimeout(timer);
     }
   }, [fadeOut]);
 
-  // Gérer le défilement et les animations basées sur le scroll
+  useEffect(() => {
+    if (!loading) {
+      // Attendre la fin de l'animation de galaxie
+      const handleGalaxyAnimationComplete = () => {
+        console.log("Animation de galaxie terminée, affichage du titre et bouton");
+        setShowTitleAndButton(true);
+        // Démarrer le fade in après un court délai
+        setTimeout(() => {
+          setTitleOpacity(1);
+          setTitleTransform('translateY(0)');
+        }, 100);
+      };
+      
+      // Attendre 50% de l'animation pour afficher le titre et le bouton
+      const handleGalaxyAnimation50Percent = () => {
+        console.log("50% de l'animation de galaxie atteints, affichage du titre et bouton");
+        setShowTitleAndButton(true);
+        // Démarrer le fade in après un court délai
+        setTimeout(() => {
+          setTitleOpacity(1);
+          setTitleTransform('translateY(0)');
+        }, 100);
+      };
+      
+      // Écouter l'événement de 50% de l'animation de la galaxie
+      window.addEventListener('galaxyAnimation50Percent', handleGalaxyAnimation50Percent);
+      
+      // Écouter l'événement de fin d'animation de la galaxie comme fallback
+      window.addEventListener('galaxyAnimationComplete', handleGalaxyAnimationComplete);
+      
+      // Fallback timer au cas où les événements ne se déclenchent pas
+      animationTimeoutRef.current = setTimeout(() => {
+        setShowTitleAndButton(true);
+        // Démarrer le fade in après un court délai
+        setTimeout(() => {
+          setTitleOpacity(1);
+          setTitleTransform('translateY(0)');
+        }, 100);
+      }, 15000); // 15 secondes comme fallback maximum
+      
+      return () => {
+        window.removeEventListener('galaxyAnimation50Percent', handleGalaxyAnimation50Percent);
+        window.removeEventListener('galaxyAnimationComplete', handleGalaxyAnimationComplete);
+        if (animationTimeoutRef.current) {
+          clearTimeout(animationTimeoutRef.current);
+        }
+      };
+    }
+  }, [loading]);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
       
-      // Masquer l'UI de la galaxie dès qu'on commence à défiler
       if (window.scrollY > 50) {
         setHideGalaxyUI(true);
       } else {
         setHideGalaxyUI(false);
       }
       
-      // Animer la caméra de la galaxie en fonction du défilement
       const totalHeight = document.body.scrollHeight - window.innerHeight;
       const scrollProgress = window.scrollY / totalHeight;
       
-      // Calculer la position de la caméra en fonction du défilement
       const newCameraPositions = [
         { x: 3, y: 3, z: 3 },             // Position initiale
         { x: -2, y: 4, z: 5 },            // Vers première planète
@@ -66,7 +120,6 @@ function App() {
         { x: -1, y: 5, z: 6 }             // Vers troisième planète
       ];
       
-      // Déterminer dans quelle section nous sommes
       const scrollThresholds = [0, 0.25, 0.5, 0.75, 1];
       let currentSection = 0;
       
@@ -77,7 +130,6 @@ function App() {
         }
       }
       
-      // Si nous sommes entre deux sections, calculer une interpolation
       const sectionProgress = (scrollProgress - scrollThresholds[currentSection]) / 
                               (scrollThresholds[currentSection + 1] - scrollThresholds[currentSection]);
       
@@ -116,6 +168,12 @@ function App() {
     }
   ];
 
+  // Textes narratifs pour les sections intermédiaires
+  const storyTexts = [
+    "Notre vaisseau s'éloigne de Pianeta Rossa, laissant derrière lui les tempêtes de poussière rouge qui dansent sur les vastes plaines désolées.\n\nLe voyage à travers le vide interstellaire commence. Les étoiles défilent comme des traces lumineuses tandis que nous nous dirigeons vers notre prochaine destination...",
+    "Après avoir navigué à travers les anneaux majestueux de Nebulosa Azure, notre vaisseau plonge dans l'espace profond.\n\nLe vide devient plus dense, presque palpable, alors que nous nous rapprochons de notre destination finale, un joyau vert-bleu qui brille dans l'obscurité cosmique."
+  ];
+
   const handleScrollToSection = (index) => {
     if (sectionsRef.current[index]) {
       sectionsRef.current[index].scrollIntoView({ 
@@ -128,16 +186,35 @@ function App() {
     return <Loader3D progress={progress} fadeOut={fadeOut} />;
   }
 
+  // Créer un tableau combiné de sections de planètes et de texte
+  const combinedSections = [];
+  randomTexts.forEach((planetData, index) => {
+    // Ajouter section de planète
+    combinedSections.push({
+      type: 'planet',
+      data: planetData,
+      index
+    });
+    
+    // Ajouter section de texte après chaque planète (sauf la dernière)
+    if (index < randomTexts.length - 1) {
+      combinedSections.push({
+        type: 'text',
+        text: storyTexts[index],
+        index: `text-${index}`
+      });
+    }
+  });
+
   return (
     <div className="App" style={{ position: 'relative' }} ref={appRef}>
-      {/* Galaxie en arrière-plan fixe */}
       <div style={{ 
         position: 'fixed', 
         top: 0, 
         left: 0, 
         width: '100%', 
         height: '100%',
-        zIndex: -1 // Arrière-plan 3D seulement
+        zIndex: -1
       }}>
         <GalaxyScene 
           hideUI={hideGalaxyUI} 
@@ -146,7 +223,6 @@ function App() {
         />
       </div>
       
-      {/* Section d'intro (première vue) */}
       <section 
         style={{ 
           height: '100vh', 
@@ -154,7 +230,7 @@ function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          pointerEvents: 'none' // Permettre les clics à travers pour atteindre le bouton
+          pointerEvents: 'none'
         }}
       >
         <div style={{
@@ -165,7 +241,7 @@ function App() {
           opacity: hideGalaxyUI ? 0 : 1,
           transition: 'opacity 0.5s ease-out',
           zIndex: 10,
-          pointerEvents: 'auto' // Rétablir les clics pour le bouton de défilement
+          pointerEvents: 'auto'
         }}>
           <div 
             onClick={() => handleScrollToSection(0)}
@@ -198,22 +274,25 @@ function App() {
       </section>
       
       {/* Couche UI de titre flottante au-dessus de tout */}
-      {!hideGalaxyUI && (
+      {!hideGalaxyUI && showTitleAndButton && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100%',
           height: '100%',
-          pointerEvents: 'none', // Par défaut, pas de capture d'événements
-          zIndex: 1000, // S'assurer qu'il est au-dessus de tout
+          pointerEvents: 'none',
+          zIndex: 1000,
           display: 'flex',
           justifyContent: 'center',
-          alignItems: 'center'
+          alignItems: 'center',
+          opacity: titleOpacity,
+          transform: titleTransform,
+          transition: 'opacity 1.5s ease-out, transform 1.8s ease-out'
         }}>
           <div style={{
             textAlign: 'center',
-            pointerEvents: 'auto', // Rétablir les interactions pour ce div spécifique
+            pointerEvents: 'auto',
             width: '100%',
             maxWidth: '800px',
             padding: '0 20px'
@@ -241,10 +320,10 @@ function App() {
         </div>
       )}
       
-      {/* Sections des planètes */}
-      {randomTexts.map((text, index) => (
+      {/* Sections combinées (planètes et texte) */}
+      {combinedSections.map((section, index) => (
         <section 
-          key={index} 
+          key={section.type + '-' + (typeof section.index === 'string' ? section.index : section.index)}
           ref={el => sectionsRef.current[index] = el}
           style={{ 
             height: '100vh', 
@@ -256,17 +335,25 @@ function App() {
             overflow: 'hidden'
           }}
         >
-          <PlanetSection 
-            planetName={text.title} 
-            planetDescription={text.planetSpec}
-            cardTitle={text.title}
-            cardContent={text.cardContent}
-            index={index}
-            isLast={index === randomTexts.length - 1}
-            onNavigateNext={() => handleScrollToSection(index + 1)}
-            invertLayout={index % 2 !== 0} // Alterner la mise en page pour chaque section
-            isVisible={scrollY > window.innerHeight * 0.5 + (index * window.innerHeight)}
-          />
+          {section.type === 'planet' ? (
+            <PlanetSection 
+              planetName={section.data.title} 
+              planetDescription={section.data.planetSpec}
+              cardTitle={section.data.title}
+              cardContent={section.data.cardContent}
+              index={section.index}
+              isLast={index === combinedSections.length - 1}
+              onNavigateNext={() => handleScrollToSection(index + 1)}
+              invertLayout={section.index % 2 !== 0}
+              isVisible={scrollY > window.innerHeight * 0.5 + (index * window.innerHeight)}
+            />
+          ) : (
+            <TextSection
+              text={section.text}
+              onNavigateNext={() => handleScrollToSection(index + 1)}
+              isVisible={scrollY > window.innerHeight * 0.5 + (index * window.innerHeight)}
+            />
+          )}
         </section>
       ))}
     </div>
