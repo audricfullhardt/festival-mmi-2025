@@ -7,6 +7,9 @@ import Loader3D        from './components/Loader3D.jsx';
 import PlanetSection   from './components/PlanetSection';
 import TextSection     from './components/TextSection';
 import * as THREE from 'three';
+import { gsap } from 'gsap';
+import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+gsap.registerPlugin(ScrollToPlugin);
 
 function App() {
   /* loader ---------------------------------------------------------- */
@@ -184,19 +187,33 @@ function App() {
   }, [animationFinished, camPosTarget, camTargetTarget]);
 
   /* helper scrollTo ------------------------------------------------- */
-  const scrollTo=(idx)=>sectionsRef.current[idx]?.scrollIntoView({behavior:'smooth'});
+  const scrollTo=(idx)=>{
+    const el = sectionsRef.current[idx];
+    if (el) {
+      gsap.to(window, {
+        duration: 1.2,
+        scrollTo: { y: el, offsetY: 0 },
+        ease: 'power2.inOut'
+      });
+    }
+  };
 
   // Bloquer le scroll tant que l'utilisateur n'a pas cliqué sur le bouton
   useEffect(() => {
     document.body.style.overflowX = 'hidden'; // Toujours désactiver le scroll horizontal
+    document.documentElement.style.overflowX = 'hidden';
     if (!allowScroll) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
       document.body.style.overflowX = '';
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.overflowX = '';
     };
   }, [allowScroll]);
 
@@ -204,10 +221,18 @@ function App() {
   useEffect(() => {
     if (animationFinished && pendingScrollTo) {
       setAllowScroll(true);
-      setTimeout(() => scrollTo(0), 50);
+      setTimeout(() => {
+        // Scroll instantané vers la première planète (t=0.2 max)
+        const planetCount = randomTexts.length;
+        const max = document.body.scrollHeight - window.innerHeight;
+        let targetT = planetCount > 1 ? 1/(planetCount-1) : 0;
+        targetT = Math.min(targetT, 0.2); // Ne va pas trop loin
+        const targetY = max * targetT;
+        window.scrollTo(0, targetY);
+      }, 0);
       setPendingScrollTo(false);
     }
-  }, [animationFinished, pendingScrollTo]);
+  }, [animationFinished, pendingScrollTo, randomTexts.length]);
 
   // Pour le fade-in du bouton 'Commencer le voyage'
   useEffect(() => {
@@ -276,7 +301,9 @@ function App() {
                 pointerEvents: animationFinished && showStartBtn ? 'auto' : 'none',
                 width: '100%', display: 'flex', justifyContent: 'center'
               }}>
-                <Button text="Commencer le voyage" onClick={() => setPendingScrollTo(true)}/>
+                <Button text="Commencer le voyage" onClick={() => {
+                  setPendingScrollTo(true);
+                }}/>
               </div>
             </div>
           </div>

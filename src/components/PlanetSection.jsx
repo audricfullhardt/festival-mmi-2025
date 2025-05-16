@@ -182,7 +182,7 @@ const PlanetSection = ({
         }}
       >
         <Canvas
-          camera={{ position: [0, 0, 10], fov: 40 }}
+          camera={{ position: [30, 30, 30], fov: 40 }}
           style={{ width: '100%', height: '100%' }}
         >
           <ambientLight intensity={0.5} />
