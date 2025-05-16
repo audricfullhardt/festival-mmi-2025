@@ -99,7 +99,7 @@ import {
         /* galaxie */
         createGalaxy(scene);
   
-        /* ---------------- intro (code d’origine) -------------------- */
+        /* ---------------- intro (code d'origine) -------------------- */
         const cameraTarget = new THREE.Vector3(0, 0, 0);
         camera.lookAt(cameraTarget);
   
@@ -216,7 +216,7 @@ import {
           renderer.dispose();
           scene.clear();
         };
-      }, [introDone]);
+      }, []);
   
       /* JSX ----------------------------------------------------------- */
       return (

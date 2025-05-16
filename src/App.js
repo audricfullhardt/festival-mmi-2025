@@ -23,12 +23,17 @@ function App() {
 
   const [camPos,    setCamPos]    = useState({ x: 3, y: 3, z: 3 });
   const [camTarget, setCamTarget] = useState({ x: 0, y: 0, z: 0 });
+  const [camPosTarget, setCamPosTarget] = useState({ x: 3, y: 3, z: 3 });
+  const [camTargetTarget, setCamTargetTarget] = useState({ x: 0, y: 0, z: 0 });
   
   // Flag pour indiquer que l'animation est terminée
   const [animationFinished, setAnimationFinished] = useState(false);
 
   const sectionsRef = useRef([]);
   const timeoutRef  = useRef(null);
+
+  const [allowScroll, setAllowScroll] = useState(false);
+  const [pendingScrollTo, setPendingScrollTo] = useState(false);
 
   /* data planètes & textes ----------------------------------------- */
   const randomTexts = [
@@ -125,9 +130,9 @@ function App() {
       const f=seg-i, s=0.5-0.5*Math.cos(Math.PI*f);
       const a=path[i], b=path[j];
       const pos={ x:a.x+(b.x-a.x)*s, y:a.y+(b.y-a.y)*s, z:a.z+(b.z-a.z)*s };
-      setCamPos(pos);
+      setCamPosTarget(pos);
       const dir={ x:b.x-a.x, y:b.y-a.y, z:b.z-a.z }, len=Math.hypot(dir.x,dir.y,dir.z)||1;
-      setCamTarget({ x:pos.x+dir.x/len*2, y:pos.y+dir.y/len*2, z:pos.z+dir.z/len*2 });
+      setCamTargetTarget({ x:pos.x+dir.x/len*2, y:pos.y+dir.y/len*2, z:pos.z+dir.z/len*2 });
       setScrollY(window.scrollY);
       setHideUI(window.scrollY>50);
     };
@@ -139,8 +144,60 @@ function App() {
     return()=>window.removeEventListener('scroll',onScroll);
   },[animationFinished]);
 
+  // Animation cinématique de la caméra (lerp)
+  useEffect(() => {
+    if (!animationFinished) return;
+    let raf;
+    function animate() {
+      setCamPos(prev => {
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const t = 0.08; // Plus petit = plus lent
+        return {
+          x: lerp(prev.x, camPosTarget.x, t),
+          y: lerp(prev.y, camPosTarget.y, t),
+          z: lerp(prev.z, camPosTarget.z, t)
+        };
+      });
+      setCamTarget(prev => {
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const t = 0.08;
+        return {
+          x: lerp(prev.x, camTargetTarget.x, t),
+          y: lerp(prev.y, camTargetTarget.y, t),
+          z: lerp(prev.z, camTargetTarget.z, t)
+        };
+      });
+      raf = requestAnimationFrame(animate);
+    }
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [animationFinished, camPosTarget, camTargetTarget]);
+
   /* helper scrollTo ------------------------------------------------- */
   const scrollTo=(idx)=>sectionsRef.current[idx]?.scrollIntoView({behavior:'smooth'});
+
+  // Bloquer le scroll tant que l'utilisateur n'a pas cliqué sur le bouton
+  useEffect(() => {
+    document.body.style.overflowX = 'hidden'; // Toujours désactiver le scroll horizontal
+    if (!allowScroll) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.overflowX = '';
+    };
+  }, [allowScroll]);
+
+  // Autoriser le scroll et scroller après la fin de l'animation d'intro
+  useEffect(() => {
+    if (animationFinished && pendingScrollTo) {
+      setAllowScroll(true);
+      setTimeout(() => scrollTo(0), 50);
+      setPendingScrollTo(false);
+    }
+  }, [animationFinished, pendingScrollTo]);
 
   /* rendu ----------------------------------------------------------- */
   if(loading) return <Loader3D progress={progress} fadeOut={fadeOut}/>;
@@ -158,7 +215,7 @@ function App() {
           position:'absolute', bottom:30, left:'50%', transform:'translateX(-50%)',
           opacity:hideUI?0:1, transition:'opacity .5s', pointerEvents:'auto'
         }}>
-          <div onClick={()=>scrollTo(0)} style={{ cursor:'pointer', animation:'bounce 2s infinite', padding:20 }}>
+          <div onClick={()=>allowScroll && scrollTo(0)} style={{ cursor:'pointer', animation:'bounce 2s infinite', padding:20 }}>
             <style>{`
               @keyframes bounce{
                 0%,20%,50%,80%,100%{transform:translateY(0);}
@@ -180,14 +237,19 @@ function App() {
           pointerEvents:'none', opacity:titleOp, transform:titleTransf,
           transition:'opacity 1.5s, transform 1.8s', zIndex:1000
         }}>
-          <div style={{ textAlign:'center', maxWidth:800, pointerEvents:'auto' }}>
+          <div style={{ 
+            textAlign:'center', maxWidth:800, pointerEvents:'auto',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' 
+          }}>
             <h1 style={{
               fontSize:'3rem', color:'#fff', marginBottom:'2rem', fontFamily:"'Orbitron',sans-serif",
               textShadow:'0 0 10px rgba(255,0,0,.5),0 0 20px rgba(0,0,255,.3)'
             }}>
               Odyssey-42 : Voyage vers le Néant
             </h1>
-            <Button text="Commencer le voyage" onClick={()=>scrollTo(0)}/>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <Button text="Commencer le voyage" onClick={() => setPendingScrollTo(true)}/>
+            </div>
           </div>
         </div>
       )}

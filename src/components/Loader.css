@@ -65,9 +65,9 @@
 
 .loader3d-canvas-wrapper {
   width: 100vw;
-  height: 80vh;
+  height: 100vh;
   max-width: 100vw;
-  max-height: 80vh;
+  max-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
