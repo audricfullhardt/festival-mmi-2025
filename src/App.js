@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Loader3D        from './components/Loader3D.jsx';
 import PlanetSection   from './components/PlanetSection';
 import TextSection     from './components/TextSection';
+import * as THREE from 'three';
 
 function App() {
   /* loader ---------------------------------------------------------- */
@@ -34,6 +35,9 @@ function App() {
 
   const [allowScroll, setAllowScroll] = useState(false);
   const [pendingScrollTo, setPendingScrollTo] = useState(false);
+
+  // Pour le fade-in du bouton 'Commencer le voyage'
+  const [showStartBtn, setShowStartBtn] = useState(false);
 
   /* data planètes & textes ----------------------------------------- */
   const randomTexts = [
@@ -111,28 +115,34 @@ function App() {
     // On ne configure le système de caméra par défilement qu'après la fin de l'animation
     if (!animationFinished) return;
     
-    const path = [
-      { x: 3,  y: 3,  z: 3 },  { x: 2,  y: 1,  z: 0.5 }, { x: -1, y: -0.5, z: -2 },
-      { x: -3, y: -1, z: -3 }, { x: -5, y: 1,  z: 0    }, { x: -4, y: 3,  z: 4 },
-      { x: -2, y: 5,  z: 7 },  { x: 0,  y: 4,  z: 6 },  { x: 2,  y: 0,  z: 2 },
-      { x: 0,  y: -2, z: -1 }, { x: -1, y: -4, z: 0 },  { x: 3,  y: -3, z: 2 },
-      { x: 5,  y: -1, z: 5 },  { x: 7,  y: 2,  z: 3 },  { x: 5,  y: 5,  z: 1 },
-      { x: 1,  y: 7,  z: 0 },  { x: -3, y: 4,  z: 2 },  { x: -5, y: 2,  z: 5 },
-      { x: -3, y: 3,  z: 8 },  { x: 0,  y: 4,  z: 7 },  { x: 3,  y: 3,  z: 6 }
+    // Points du chemin (à ajuster selon la galaxie)
+    const pathPoints = [
+      new THREE.Vector3(-15, 2, -30),
+      new THREE.Vector3(-10, 3, -15),
+      new THREE.Vector3(-5, 4, 0),
+      new THREE.Vector3(0, 2, 10),
+      new THREE.Vector3(5, 0, 20),
+      new THREE.Vector3(10, -2, 30),
+      new THREE.Vector3(15, 1, 40),
+      new THREE.Vector3(20, 3, 50),
+      new THREE.Vector3(25, 5, 60)
     ];
+    const cameraCurve = new THREE.CatmullRomCurve3(pathPoints);
 
     const onScroll=()=>{
       const max=document.body.scrollHeight-window.innerHeight;
       if(max<=0) return;
-      const t=window.scrollY/max;
-      const seg=(path.length-1)*t;
-      const i=Math.floor(seg), j=Math.min(i+1,path.length-1);
-      const f=seg-i, s=0.5-0.5*Math.cos(Math.PI*f);
-      const a=path[i], b=path[j];
-      const pos={ x:a.x+(b.x-a.x)*s, y:a.y+(b.y-a.y)*s, z:a.z+(b.z-a.z)*s };
-      setCamPosTarget(pos);
-      const dir={ x:b.x-a.x, y:b.y-a.y, z:b.z-a.z }, len=Math.hypot(dir.x,dir.y,dir.z)||1;
-      setCamTargetTarget({ x:pos.x+dir.x/len*2, y:pos.y+dir.y/len*2, z:pos.z+dir.z/len*2 });
+      const slowFactor = 0.5; // 0.5 = 2x plus lent, 0.25 = 4x plus lent
+      const tRaw = (window.scrollY / max) * slowFactor;
+      const t = Math.min(tRaw, 1);
+      // Position de la caméra sur la courbe
+      const pos = cameraCurve.getPoint(t);
+      setCamPosTarget({ x: pos.x, y: pos.y, z: pos.z });
+
+      // Look ahead : on regarde un peu plus loin sur la courbe
+      const lookT = Math.min(t + 0.03, 1); // 0.03 = distance d'anticipation
+      const lookAt = cameraCurve.getPoint(lookT);
+      setCamTargetTarget({ x: lookAt.x, y: lookAt.y, z: lookAt.z });
       setScrollY(window.scrollY);
       setHideUI(window.scrollY>50);
     };
@@ -199,6 +209,17 @@ function App() {
     }
   }, [animationFinished, pendingScrollTo]);
 
+  // Pour le fade-in du bouton 'Commencer le voyage'
+  useEffect(() => {
+    if (animationFinished) {
+      // Petit délai pour l'effet
+      const t = setTimeout(() => setShowStartBtn(true), 400);
+      return () => clearTimeout(t);
+    } else {
+      setShowStartBtn(false);
+    }
+  }, [animationFinished]);
+
   /* rendu ----------------------------------------------------------- */
   if(loading) return <Loader3D progress={progress} fadeOut={fadeOut}/>;
 
@@ -248,7 +269,15 @@ function App() {
               Odyssey-42 : Voyage vers le Néant
             </h1>
             <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-              <Button text="Commencer le voyage" onClick={() => setPendingScrollTo(true)}/>
+              <div style={{
+                opacity: animationFinished && showStartBtn ? 1 : 0,
+                transform: animationFinished && showStartBtn ? 'translateY(0)' : 'translateY(30px)',
+                transition: 'opacity 0.5s cubic-bezier(.4,1,.4,1), transform 0.5s cubic-bezier(.4,1,.4,1)',
+                pointerEvents: animationFinished && showStartBtn ? 'auto' : 'none',
+                width: '100%', display: 'flex', justifyContent: 'center'
+              }}>
+                <Button text="Commencer le voyage" onClick={() => setPendingScrollTo(true)}/>
+              </div>
             </div>
           </div>
         </div>

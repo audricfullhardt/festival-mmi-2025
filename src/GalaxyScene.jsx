@@ -136,31 +136,29 @@ import {
                 // Animer vers la position finale de l'intro
                 gsap.to(camera.position, {
                   x: 3, y: 3, z: 3,
-                  duration: 10,
-                  ease: 'power2.out',
+                  duration: 5,
+                  ease: 'power3.out',
                   onStart: () =>
                     setTimeout(
                       () => window.dispatchEvent(new CustomEvent('galaxyAnimation50Percent')),
-                      4500
+                      2250
                     ),
                   onUpdate: () => {
-                    // S'assurer que la caméra pointe vers le centre pendant toute l'animation
                     camera.lookAt(0, 0, 0);
                   },
                   onComplete: () => {
-                    // Faire une pause avant de déclencher l'événement de fin
                     setTimeout(() => {
                       setIntroDone(true);
                       setShowCredits(false);
                       window.dispatchEvent(new CustomEvent('galaxyAnimationComplete'));
-                    }, 500);
+                    }, 150);
                   }
                 });
   
                 /* crédits OUT */
                 gsap.to({ p: 0 }, {
                   p: 1,
-                  duration: 4.5,
+                  duration: 2.5,
                   ease: 'none',
                   onUpdate() {
                     const p = this.targets()[0].p;
