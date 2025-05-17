@@ -226,11 +226,15 @@ function App() {
   /* rendu ----------------------------------------------------------- */
   if(loading) return <Loader3D progress={progress} fadeOut={fadeOut}/>;
 
+  // Calcul du scroll progress (0 = haut, 1 = bas)
+  const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+  const scrollProgress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
+
   return (
     <div className="App" style={{ position:'relative' }}>
       {/* scène 3D */}
       <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
-        <GalaxyScene currentPlanetIndex={currentPlanetIndex}/>
+        <GalaxyScene currentPlanetIndex={currentPlanetIndex} scrollProgress={scrollProgress}/>
       </div>
 
       {/* intro plein écran + flèche */}

@@ -17,23 +17,30 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
 import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader';
 import React from 'react';
+import Spaceship from './components/Spaceship';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import ReactDOM from 'react-dom';
 
 const GalaxyScene = forwardRef(({
                                   hideUI = false,
                                   cameraT = 0,
                                   cameraPosition = { x: 3, y: 3, z: 3 },
                                   cameraTarget = { x: 0, y: 0, z: 0 },
-                                  currentPlanetIndex = 0
+                                  currentPlanetIndex = 0,
+                                  scrollProgress = 0
                                 }, ref) => {
   gsap.registerPlugin(TextPlugin);
   const canvasRef = useRef();
   const cameraRef = useRef();
+  const sceneRef = useRef();
   const controlsRef = useRef();
   const moonPivotRef = useRef();
   const shield1Ref = useRef();
   const shield2Ref = useRef();
   const icosphereRef = useRef();
   const chrysalisRef = useRef();
+  const spaceshipRef = useRef();
+  const spaceshipCurveRef = useRef();
 
   const [introDone, setIntroDone] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
@@ -79,6 +86,7 @@ const GalaxyScene = forwardRef(({
   useEffect(() => {
     const canvas = canvasRef.current;
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     const sizes = { w: window.innerWidth, h: window.innerHeight };
 
     const camera = new THREE.PerspectiveCamera(75, sizes.w / sizes.h, 0.1, 100);
@@ -199,6 +207,49 @@ const GalaxyScene = forwardRef(({
       });
     });
 
+    // Générer la courbe du vaisseau à partir des positions des planètes
+    // Calculer la direction d'entrée et de sortie pour ajouter un point avant et après
+    let points = [];
+    if (planetPositions.length >= 2) {
+      // Direction de la première planète vers la deuxième
+      const dirStart = planetPositions[1].clone().sub(planetPositions[0]).normalize();
+      // Point de départ : devant la première planète (dans l'axe vers la deuxième)
+      const start = planetPositions[0].clone().sub(dirStart.clone().multiplyScalar(10));
+      points.push(start);
+      // Points des planètes
+      planetPositions.forEach(p => points.push(p.clone()));
+      // Direction de l'avant-dernière vers la dernière planète
+      const n = planetPositions.length;
+      const dirEnd = planetPositions[n-1].clone().sub(planetPositions[n-2]).normalize();
+      // Point d'arrivée : devant la dernière planète (dans l'axe de sortie)
+      const end = planetPositions[n-1].clone().add(dirEnd.clone().multiplyScalar(10));
+      points.push(end);
+    }
+    const shipCurve = new THREE.CatmullRomCurve3(points);
+    spaceshipCurveRef.current = shipCurve;
+
+    // Suivi caméra third-person attaché au vaisseau
+    if (spaceshipCurveRef.current && introDone && camera) {
+      const t = Math.min(Math.max(scrollProgress, 0.01), 0.99);
+      const curve = spaceshipCurveRef.current;
+      const pos = curve.getPoint(t);
+      const tangent = curve.getTangent(t).normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+      const side = new THREE.Vector3().crossVectors(up, tangent).normalize();
+      const upReal = new THREE.Vector3().crossVectors(tangent, side).normalize();
+      // Position caméra : derrière et au-dessus du vaisseau
+      const cameraDistance = 7;
+      const cameraHeight = 2.5;
+      const cameraPos = pos
+        .clone()
+        .add(upReal.clone().multiplyScalar(cameraHeight))
+        .add(tangent.clone().multiplyScalar(-cameraDistance));
+      camera.position.copy(cameraPos);
+      // La caméra regarde un point devant le vaisseau
+      const lookAt = pos.clone().add(tangent.clone().multiplyScalar(8));
+      camera.lookAt(lookAt);
+    }
+
     const cameraTarget = new THREE.Vector3(0, 0, 0);
     camera.lookAt(cameraTarget);
 
@@ -269,6 +320,7 @@ const GalaxyScene = forwardRef(({
       if (shield2Ref.current) shield2Ref.current.rotation.z -= 0.003;
       if (icosphereRef.current) icosphereRef.current.rotation.y += 0.002;
       if (chrysalisRef.current) chrysalisRef.current.rotation.y += 0.002;
+
       composer.render();
       id = requestAnimationFrame(tick);
     };
@@ -294,9 +346,31 @@ const GalaxyScene = forwardRef(({
     };
   }, []);
 
+  // Composant pour synchroniser la caméra react-three-fiber avec la caméra principale Three.js
+  function SyncedCamera({ mainCamera }) {
+    const { camera } = useThree();
+    useFrame(() => {
+      if (mainCamera) {
+        camera.position.copy(mainCamera.position);
+        camera.quaternion.copy(mainCamera.quaternion);
+        camera.fov = mainCamera.fov;
+        camera.updateProjectionMatrix();
+      }
+    });
+    return null;
+  }
+
   return (
       <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
         <canvas ref={canvasRef} className="webgl" style={{ pointerEvents: 'none' }} />
+        {/* Overlay react-three-fiber pour le vaisseau et son trail */}
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
+          <Canvas gl={{ alpha: true }} style={{ width: '100vw', height: '100vh', background: 'transparent', pointerEvents: 'none' }}>
+            <SyncedCamera mainCamera={cameraRef.current} />
+            <ambientLight intensity={0.7} />
+            {introDone && <Spaceship progress={scrollProgress * 100} scale={3} />}
+          </Canvas>
+        </div>
         {showCredits && (
             <div
                 style={{

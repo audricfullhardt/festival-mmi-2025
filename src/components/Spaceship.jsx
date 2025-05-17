@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-export default function Spaceship({ progress }) {
+export default function Spaceship({ progress, scale = 0.6 }) {
   const { scene } = useGLTF('/models/vaisseau.glb');
   const gradientTexture = useTexture('/models/TraiGradient.png');
   const spaceshipRef = useRef();
@@ -60,7 +60,7 @@ export default function Spaceship({ progress }) {
     <primitive
       ref={spaceshipRef}
       object={scene}
-      scale={0.6}
+      scale={scale}
     />
   );
 }

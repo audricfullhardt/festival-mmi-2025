@@ -114,8 +114,6 @@ const PlanetSection = ({
                         shadow-mapSize-height={1024}
                         shadow-bias={-0.001}
                     />
-                    <Stars />
-
                     {/* Sol pour recevoir les ombres */}
                     <mesh
                         receiveShadow
