@@ -12,6 +12,9 @@ body{
   justify-content: center;
 }
 
+html, body {
+  overflow-x: hidden !important;
+}
 
 .tiltcard{
   width: 400px;
