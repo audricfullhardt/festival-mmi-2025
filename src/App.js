@@ -71,6 +71,7 @@ function App() {
     "Après avoir navigué à travers les anneaux de Nebulosa Azure …"
   ];
 
+  // 1. Déclare combinedSections
   const combinedSections = [];
   // Ajoute un texte d'intro avant la première planète
   combinedSections.push({ type: 'text', text: "Lancement de l'odyssée...", index: 'intro' });
@@ -79,6 +80,31 @@ function App() {
     if(i<randomTexts.length-1)
       combinedSections.push({ type:'text', text:storyTexts[i], index:`text-${i}` });
   });
+
+  // 2. Mapping précis : pour chaque section, associer un t sur la courbe (0, 0.5, 1, 1.5, ...)
+  const sectionCurveT = [];
+  let planetIdx = 0;
+  for (let i = 0; i < combinedSections.length; i++) {
+    if (combinedSections[i].type === 'planet') {
+      sectionCurveT.push(planetIdx);
+      planetIdx++;
+    } else {
+      // Si c'est le tout premier texte (intro), t=0 (début de la courbe)
+      if (i === 0) {
+        sectionCurveT.push(0);
+      } else {
+        // Texte : juste après la planète précédente (20% du chemin)
+        sectionCurveT.push(planetIdx - 1 + 0.2);
+      }
+    }
+  }
+
+  // 3. Normaliser pour que t aille de 0 à 1 sur la courbe
+  const maxT = Math.max(...sectionCurveT);
+  const normalizedSectionCurveT = sectionCurveT.map(t => t / maxT);
+
+  // 4. t de la première planète (après l'intro)
+  const t_planet1 = normalizedSectionCurveT.find((t, i) => combinedSections[i].type === 'planet' && combinedSections[i].index === 0) || 0.0001;
 
   /* fake loader ----------------------------------------------------- */
   useEffect(()=>{
@@ -242,33 +268,33 @@ function App() {
     }
   }, [animationFinished]);
 
+  // Animation d'intro
+  const [introAnimating, setIntroAnimating] = useState(false);
+  const [introProgress, setIntroProgress] = useState(0);
+
+  // Animation d'intro (avance de 0 à t_planet1)
+  useEffect(() => {
+    if (introAnimating) {
+      let start = null;
+      const duration = 1800; // ms
+      function animate(ts) {
+        if (!start) start = ts;
+        const elapsed = ts - start;
+        const p = Math.min(elapsed / duration, 1);
+        setIntroProgress(t_planet1 * p);
+        if (p < 1) requestAnimationFrame(animate);
+        else setIntroAnimating(false);
+      }
+      requestAnimationFrame(animate);
+    }
+  }, [introAnimating, t_planet1]);
+
   /* rendu ----------------------------------------------------------- */
   if(loading) return <Loader3D progress={animatedProgress} fadeOut={fadeOut}/>;
 
   // Calcul du scroll progress (0 = haut, 1 = bas)
   const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
   const scrollProgress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
-
-  // Mapping précis : pour chaque section, associer un t sur la courbe (0, 0.5, 1, 1.5, ...)
-  const sectionCurveT = [];
-  let planetIdx = 0;
-  for (let i = 0; i < combinedSections.length; i++) {
-    if (combinedSections[i].type === 'planet') {
-      sectionCurveT.push(planetIdx);
-      planetIdx++;
-    } else {
-      // Si c'est le tout premier texte (intro), t=0 (début de la courbe)
-      if (i === 0) {
-        sectionCurveT.push(0);
-      } else {
-        // Texte : juste après la planète précédente (20% du chemin)
-        sectionCurveT.push(planetIdx - 1 + 0.2);
-      }
-    }
-  }
-  // Normaliser pour que t aille de 0 à 1 sur la courbe
-  const maxT = Math.max(...sectionCurveT);
-  const normalizedSectionCurveT = sectionCurveT.map(t => t / maxT);
 
   // Calcul du t de la planète de départ pour chaque section
   const sectionPlanetT = [];
@@ -293,21 +319,24 @@ function App() {
     const tA = normalizedSectionCurveT[sectionIndex];
     const tB = normalizedSectionCurveT[Math.min(sectionIndex + 1, normalizedSectionCurveT.length - 1)];
     curveProgress = tA + (tB - tA) * sectionT;
-    // Caméra : si section texte, on interpole entre planète de départ et t_vaisseau
     const isText = combinedSections[sectionIndex].type === 'text';
     if (isText) {
       const tPlanet = sectionPlanetT[sectionIndex];
-      cameraProgress = tPlanet + (curveProgress - tPlanet) * 0.5; // 0.5 = milieu, ajuste si besoin
+      cameraProgress = tPlanet + (curveProgress - tPlanet) * 0.5;
     } else {
       cameraProgress = curveProgress;
     }
   }
 
+  // Progress à utiliser : intro ou scroll
+  const effectiveProgress = introAnimating ? introProgress : curveProgress;
+  const effectiveCameraProgress = introAnimating ? effectiveProgress : cameraProgress;
+
   return (
     <div className="App" style={{ position:'relative' }}>
       {/* scène 3D */}
       <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
-        <GalaxyScene currentPlanetIndex={currentPlanetIndex} scrollProgress={curveProgress} cameraProgress={cameraProgress}/>
+        <GalaxyScene currentPlanetIndex={currentPlanetIndex} scrollProgress={effectiveProgress} cameraProgress={effectiveCameraProgress}/>
       </div>
 
       {/* intro plein écran + flèche */}
@@ -358,6 +387,7 @@ function App() {
               }}>
                 <Button text="Commencer le voyage" onClick={() => {
                   setPendingScrollTo(true);
+                  setIntroAnimating(true);
                 }}/>
               </div>
             </div>

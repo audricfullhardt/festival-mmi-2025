@@ -213,10 +213,8 @@ const GalaxyScene = forwardRef(({
     // Calculer la direction d'entrée et de sortie pour ajouter un point avant et après
     let points = [];
     if (planetPositions.length >= 2) {
-      // Direction de la première planète vers la deuxième
-      const dirStart = planetPositions[1].clone().sub(planetPositions[0]).normalize();
-      // Point de départ : devant la première planète (dans l'axe vers la deuxième)
-      const start = planetPositions[0].clone().sub(dirStart.clone().multiplyScalar(10));
+      // Point de départ : éloigné à droite de la première planète (axe X positif)
+      const start = planetPositions[0].clone().add(new THREE.Vector3(12, 0, 0));
       points.push(start);
       // Points des planètes
       planetPositions.forEach(p => points.push(p.clone()));
