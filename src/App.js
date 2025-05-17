@@ -84,7 +84,7 @@ function App() {
       v+=Math.floor(Math.random()*2)+1;
       if(v>=100){setProgress(100);clearInterval(id);setTimeout(()=>setFadeOut(true),250);}
       else setProgress(v);
-    },50);
+    },75);
     return()=>clearInterval(id);
   },[loading]);
 
