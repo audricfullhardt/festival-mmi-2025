@@ -1,7 +1,6 @@
 import React from 'react';
 
 const PlanetSpec = ({ title, text }) => {
-  // Nouveau path adapté à 170x210px (divisé par 2)
   const svgPath = "M2.5 2.5H138L166 30.5V130L159 137V159.5L166 166.5V207.5H127L119 199.5H54.5L46.5 207.5H2.5V178L9.5 171V66.5L2.5 59.5V2.5Z";
   const containerStyle = {
     position: 'relative',
@@ -73,7 +72,6 @@ const PlanetSpec = ({ title, text }) => {
     margin: 0,
   };
 
-  // Scanlines et reflets
   const scanlineStyle = {
     position: 'absolute',
     top: 0,

@@ -1,70 +1,38 @@
-# Getting Started with Create React App
+Odyssey-42 est une expérience narrative interactive en 3D, conçue pour le festival MMI 2025. Ce site web raconte le périple spatial de Kaël, un astronaute perdu dans une région inconnue de l’univers, à la recherche d’un monde habité pour réparer son vaisseau et rentrer chez lui.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+🪐 Projet réalisé en 3 jours par :
 
-## Available Scripts
+2 étudiants en 2e année MMI
 
-In the project directory, you can run:
+1 étudiant en 1re année MMI
 
-### `npm start`
+🚀 Technologies utilisées
+Three.js (moteur 3D WebGL)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+GSAP (animations fluides et contrôlées)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+React (structure du site)
 
-### `npm test`
+Vite (environnement de développement)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Blender (modélisation 3D)
 
-### `npm run build`
+Figma (conception UI)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+🧠 Objectifs
+Raconter une histoire de science-fiction immersive à travers une navigation interactive
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Créer une ambiance visuelle et sonore unique pour chaque planète
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Mettre en valeur nos compétences en narration visuelle, développement web et création 3D
 
-### `npm run eject`
+🗺️ Structure du voyage
+Intro : Kaël dérive dans l’espace, vaisseau endommagé
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Planète Mornis : désert de sable et tempêtes
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Planète Cryon : monde de glace silencieux
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Planète Virelia : civilisation avancée, espoir de retour
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Final : révélation sur le Néant

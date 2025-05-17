@@ -1,4 +1,4 @@
-import TiltCard        from './components/TiltCard';         // toujours dispo
+import TiltCard        from './components/TiltCard';
 import Button          from './components/Button.jsx';
 import PlanetSpec      from './components/PlanetSpec';
 import GalaxyScene     from './GalaxyScene';
@@ -16,35 +16,22 @@ function lerp(a, b, t) {
 }
 
 function App() {
-  /* loader ---------------------------------------------------------- */
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
   const [animatedProgress, setAnimatedProgress] = useState(0);
-
-  /* UI & caméra ----------------------------------------------------- */
   const [scrollY, setScrollY] = useState(0);
   const [hideUI,  setHideUI]  = useState(false);
-
   const [showTitle,   setShowTitle]   = useState(false);
   const [titleOp,     setTitleOp]     = useState(0);
   const [titleTransf, setTitleTransf] = useState('translateY(20px)');
-
-  // Flag pour indiquer que l'animation est terminée
   const [animationFinished, setAnimationFinished] = useState(false);
-
   const sectionsRef = useRef([]);
   const timeoutRef  = useRef(null);
-
   const [allowScroll, setAllowScroll] = useState(false);
   const [pendingScrollTo, setPendingScrollTo] = useState(false);
-
-  // Pour le fade-in du bouton 'Commencer le voyage'
   const [showStartBtn, setShowStartBtn] = useState(false);
-
   const [currentPlanetIndex, setCurrentPlanetIndex] = useState(0);
-
-  /* data planètes & textes ----------------------------------------- */
   const randomTexts = [
     {
       title: 'Mornis',
@@ -65,15 +52,11 @@ function App() {
       planetSpec: 'Diamètre : 15 600 km | Gravité : 0,95 g | Atmosphère : N₂, O₂, traces de gaz nobles | Hostilité : Faible | Habité : Oui'
     }
   ];
-
   const storyTexts = [
     "Alors que son module quittait l'orbite de Mornis, Kaël resta silencieux. Il ne savait plus s'il fuyait le Néant ou s'il courait vers quelque chose. Son souffle était court, ses paupières lourdes, mais un second signal s'éveilla dans la nuit noire. Une autre chance. Une autre planète.",
     "Kaël quitta Cryon, épuisé, l'esprit fissuré par la solitude. Il programma le module pour suivre un nouveau signal, sans y croire vraiment. Mais bientôt, un chant étrange résonna dans la nuit. Virelia apparut, lumineuse, vivante, comme une oasis suspendue dans le vide."
   ];
-
-  // 1. Déclare combinedSections
   const combinedSections = [];
-  // Ajoute un texte d'intro avant la première planète
   combinedSections.push({
     type: 'text',
     text: `Kaël rouvre les yeux dans le silence glacé du cockpit secondaire de l'Odyssey-42. Autour de lui, tout est immobile : les alarmes se sont tues, les parois vibrent faiblement. De l'équipage, il ne reste que des souvenirs, enregistrés dans la mémoire du vaisseau.
@@ -88,8 +71,6 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
     if(i<randomTexts.length-1)
       combinedSections.push({ type:'text', text:storyTexts[i], index:`text-${i}` });
   });
-
-  // 2. Mapping précis : pour chaque section, associer un t sur la courbe (0, 0.5, 1, 1.5, ...)
   const sectionCurveT = [];
   let planetIdx = 0;
   for (let i = 0; i < combinedSections.length; i++) {
@@ -97,24 +78,16 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       sectionCurveT.push(planetIdx);
       planetIdx++;
     } else {
-      // Si c'est le tout premier texte (intro), t=0 (début de la courbe)
       if (i === 0) {
         sectionCurveT.push(0);
       } else {
-        // Texte : juste après la planète précédente (20% du chemin)
         sectionCurveT.push(planetIdx - 1 + 0.2);
       }
     }
   }
-
-  // 3. Normaliser pour que t aille de 0 à 1 sur la courbe
   const maxT = Math.max(...sectionCurveT);
   const normalizedSectionCurveT = sectionCurveT.map(t => t / maxT);
-
-  // 4. t de la première planète (après l'intro)
   const t_planet1 = normalizedSectionCurveT.find((t, i) => combinedSections[i].type === 'planet' && combinedSections[i].index === 0) || 0.0001;
-
-  /* fake loader ----------------------------------------------------- */
   useEffect(()=>{
     if(!loading) return;
     let v=0;
@@ -125,10 +98,7 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
     },75);
     return()=>clearInterval(id);
   },[loading]);
-
   useEffect(()=>{ if(fadeOut){const id=setTimeout(()=>setLoading(false),600);return()=>clearTimeout(id);} },[fadeOut]);
-
-  // Ajout de l'interpolation douce pour animatedProgress
   useEffect(() => {
     if (!loading) return;
     let raf;
@@ -139,8 +109,6 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
     animate();
     return () => cancelAnimationFrame(raf);
   }, [progress, loading]);
-
-  /* titre après intro ---------------------------------------------- */
   useEffect(()=>{
     if(loading) return;
     const show=()=>{
@@ -150,7 +118,6 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
     const half=()=>show();
     const end=()=>{
       show();
-      // Marquer l'animation comme terminée
       setAnimationFinished(true);
     };
     window.addEventListener('galaxyAnimation50Percent',half);
@@ -162,13 +129,8 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       clearTimeout(timeoutRef.current);
     };
   },[loading]);
-
-  /* scroll → caméra ------------------------------------------------- */
   useEffect(()=>{
-    // On ne configure le système de caméra par défilement qu'après la fin de l'animation
     if (!animationFinished) return;
-    
-    // Points du chemin (à ajuster selon la galaxie)
     const pathPoints = [
       new THREE.Vector3(-15, 2, -30),
       new THREE.Vector3(-10, 3, -15),
@@ -181,14 +143,11 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       new THREE.Vector3(25, 5, 60)
     ];
     const cameraCurve = new THREE.CatmullRomCurve3(pathPoints);
-
     const onScroll=()=>{
       const max=document.body.scrollHeight-window.innerHeight;
       if(max<=0) return;
       setScrollY(window.scrollY);
       setHideUI(window.scrollY>50);
-
-      // Trouver la section planète la plus proche du centre du viewport
       const planetSections = combinedSections
         .map((sec, i) => ({...sec, domIndex: i}))
         .filter(sec => sec.type === 'planet');
@@ -209,15 +168,10 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       });
       setCurrentPlanetIndex(idx);
     };
-    
-    // Mettre à jour l'UI et la position de la caméra initialement
     onScroll();
-    
     window.addEventListener('scroll',onScroll,{passive:true});
     return()=>window.removeEventListener('scroll',onScroll);
   },[animationFinished, combinedSections]);
-
-  /* helper scrollTo ------------------------------------------------- */
   const scrollTo=(idx)=>{
     const el = sectionsRef.current[idx];
     if (el) {
@@ -228,10 +182,8 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       });
     }
   };
-
-  // Bloquer le scroll tant que l'utilisateur n'a pas cliqué sur le bouton
   useEffect(() => {
-    document.body.style.overflowX = 'hidden'; // Toujours désactiver le scroll horizontal
+    document.body.style.overflowX = 'hidden';
     document.documentElement.style.overflowX = 'hidden';
     if (!allowScroll) {
       document.body.style.overflow = 'hidden';
@@ -247,44 +199,34 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       document.documentElement.style.overflowX = '';
     };
   }, [allowScroll]);
-
-  // Autoriser le scroll et scroller après la fin de l'animation d'intro
   useEffect(() => {
     if (animationFinished && pendingScrollTo) {
       setAllowScroll(true);
       setTimeout(() => {
-        // Scroll instantané vers la première planète (t=0.2 max)
         const planetCount = randomTexts.length;
         const max = document.body.scrollHeight - window.innerHeight;
         let targetT = planetCount > 1 ? 1/(planetCount-1) : 0;
-        targetT = Math.min(targetT, 0.2); // Ne va pas trop loin
+        targetT = Math.min(targetT, 0.2);
         const targetY = max * targetT;
         window.scrollTo(0, targetY);
       }, 0);
       setPendingScrollTo(false);
     }
   }, [animationFinished, pendingScrollTo, randomTexts.length]);
-
-  // Pour le fade-in du bouton 'Commencer le voyage'
   useEffect(() => {
     if (animationFinished) {
-      // Petit délai pour l'effet
       const t = setTimeout(() => setShowStartBtn(true), 400);
       return () => clearTimeout(t);
     } else {
       setShowStartBtn(false);
     }
   }, [animationFinished]);
-
-  // Animation d'intro
   const [introAnimating, setIntroAnimating] = useState(false);
   const [introProgress, setIntroProgress] = useState(0);
-
-  // Animation d'intro (avance de 0 à t_planet1)
   useEffect(() => {
     if (introAnimating) {
       let start = null;
-      const duration = 1800; // ms
+      const duration = 1800;
       function animate(ts) {
         if (!start) start = ts;
         const elapsed = ts - start;
@@ -296,23 +238,13 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       requestAnimationFrame(animate);
     }
   }, [introAnimating, t_planet1]);
-
-  // État pour l'écran de fin
   const [showEnding, setShowEnding] = useState(false);
   const [endingTypingDone, setEndingTypingDone] = useState(false);
   const endingText = `Le Néant n'était pas un lieu, mais une boucle. Kaël observa la courbure des étoiles, pensa à son équipage, aux mondes traversés. Il aurait pu rester, mais quelque chose en lui refusait de s'arrêter là. Il remonta à bord, saisit les commandes, le regard fixé sur l'horizon. Tant qu'il restait une étoile à suivre, il continuerait.`;
-
-  // Handler pour la dernière flèche
   const handleShowEnding = useCallback(() => setShowEnding(true), []);
-
-  /* rendu ----------------------------------------------------------- */
   if(loading) return <Loader3D progress={animatedProgress} fadeOut={fadeOut}/>;
-
-  // Calcul du scroll progress (0 = haut, 1 = bas)
   const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
   const scrollProgress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
-
-  // Calcul du t de la planète de départ pour chaque section
   const sectionPlanetT = [];
   planetIdx = 0;
   for (let i = 0; i < combinedSections.length; i++) {
@@ -323,8 +255,6 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       sectionPlanetT.push((planetIdx - 1) / maxT);
     }
   }
-
-  // Trouver la section courante et interpoler entre t de la section courante et suivante
   let curveProgress = 0;
   let cameraProgress = 0;
   if (combinedSections.length > 1) {
@@ -343,19 +273,13 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
       cameraProgress = curveProgress;
     }
   }
-
-  // Progress à utiliser : intro ou scroll
   const effectiveProgress = introAnimating ? introProgress : curveProgress;
   const effectiveCameraProgress = introAnimating ? effectiveProgress : cameraProgress;
-
   return (
     <div className="App" style={{ position:'relative' }}>
-      {/* scène 3D */}
       <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
         <GalaxyScene currentPlanetIndex={currentPlanetIndex} scrollProgress={effectiveProgress} cameraProgress={effectiveCameraProgress}/>
       </div>
-
-      {/* intro plein écran + flèche */}
       <section style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <div style={{
           position:'absolute', bottom:30, left:'50%', transform:'translateX(-50%)',
@@ -375,8 +299,6 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
           </div>
         </div>
       </section>
-
-      {/* titre flottant */}
       {!hideUI && showTitle && (
         <div style={{
           position:'fixed', inset:0, display:'flex', justifyContent:'center', alignItems:'center',
@@ -410,8 +332,6 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
           </div>
         </div>
       )}
-
-      {/* sections planètes + textes */}
       {combinedSections.map((sec,i)=>(
         <section key={i} ref={el=>sectionsRef.current[i]=el}
           style={{ height:'100vh', width:'100vw', display:'flex', alignItems:'center',
@@ -436,8 +356,6 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
           )}
         </section>
       ))}
-
-      {/* Overlay de fin */}
       {showEnding && (
         <div style={{
           position: 'fixed', inset: 0, background: 'black', color: 'white', zIndex: 9999,
