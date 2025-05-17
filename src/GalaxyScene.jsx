@@ -27,7 +27,8 @@ const GalaxyScene = forwardRef(({
                                   cameraPosition = { x: 3, y: 3, z: 3 },
                                   cameraTarget = { x: 0, y: 0, z: 0 },
                                   currentPlanetIndex = 0,
-                                  scrollProgress = 0
+                                  scrollProgress = 0,
+                                  cameraProgress
                                 }, ref) => {
   gsap.registerPlugin(TextPlugin);
   const canvasRef = useRef();
@@ -41,6 +42,7 @@ const GalaxyScene = forwardRef(({
   const chrysalisRef = useRef();
   const spaceshipRef = useRef();
   const spaceshipCurveRef = useRef();
+  const cameraProgressRef = useRef(cameraProgress);
 
   const [introDone, setIntroDone] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
@@ -228,28 +230,6 @@ const GalaxyScene = forwardRef(({
     const shipCurve = new THREE.CatmullRomCurve3(points);
     spaceshipCurveRef.current = shipCurve;
 
-    // Suivi caméra third-person attaché au vaisseau
-    if (spaceshipCurveRef.current && introDone && camera) {
-      const t = Math.min(Math.max(scrollProgress, 0.01), 0.99);
-      const curve = spaceshipCurveRef.current;
-      const pos = curve.getPoint(t);
-      const tangent = curve.getTangent(t).normalize();
-      const up = new THREE.Vector3(0, 1, 0);
-      const side = new THREE.Vector3().crossVectors(up, tangent).normalize();
-      const upReal = new THREE.Vector3().crossVectors(tangent, side).normalize();
-      // Position caméra : derrière et au-dessus du vaisseau
-      const cameraDistance = 7;
-      const cameraHeight = 2.5;
-      const cameraPos = pos
-        .clone()
-        .add(upReal.clone().multiplyScalar(cameraHeight))
-        .add(tangent.clone().multiplyScalar(-cameraDistance));
-      camera.position.copy(cameraPos);
-      // La caméra regarde un point devant le vaisseau
-      const lookAt = pos.clone().add(tangent.clone().multiplyScalar(8));
-      camera.lookAt(lookAt);
-    }
-
     const cameraTarget = new THREE.Vector3(0, 0, 0);
     camera.lookAt(cameraTarget);
 
@@ -321,6 +301,28 @@ const GalaxyScene = forwardRef(({
       if (icosphereRef.current) icosphereRef.current.rotation.y += 0.002;
       if (chrysalisRef.current) chrysalisRef.current.rotation.y += 0.002;
 
+      // Suivi caméra third-person attaché au vaisseau (à chaque frame)
+      if (spaceshipCurveRef.current && introDone && cameraRef.current) {
+        const t = Math.min(Math.max(typeof cameraProgressRef.current !== 'undefined' ? cameraProgressRef.current : scrollProgress, 0.01), 0.99);
+        const curve = spaceshipCurveRef.current;
+        const pos = curve.getPoint(t);
+        const tangent = curve.getTangent(t).normalize();
+        const up = new THREE.Vector3(0, 1, 0);
+        const side = new THREE.Vector3().crossVectors(up, tangent).normalize();
+        const upReal = new THREE.Vector3().crossVectors(tangent, side).normalize();
+        // Position caméra : derrière et au-dessus du vaisseau
+        const cameraDistance = 7;
+        const cameraHeight = 2.5;
+        const cameraPos = pos
+          .clone()
+          .add(upReal.clone().multiplyScalar(cameraHeight))
+          .add(tangent.clone().multiplyScalar(-cameraDistance));
+        cameraRef.current.position.copy(cameraPos);
+        // La caméra regarde un point devant le vaisseau
+        const lookAt = pos.clone().add(tangent.clone().multiplyScalar(8));
+        cameraRef.current.lookAt(lookAt);
+      }
+
       composer.render();
       id = requestAnimationFrame(tick);
     };
@@ -337,6 +339,40 @@ const GalaxyScene = forwardRef(({
     };
     window.addEventListener('resize', onResize);
 
+    // Ajout d'un champ d'astéroïdes
+    const asteroidFiles = [
+      '/models/asteroid1.glb',
+      '/models/asteroid2.glb',
+      '/models/asteroid3.glb',
+      '/models/asteroid4.glb',
+      '/models/asteroid5.glb'
+    ];
+    const asteroidCount = 40;
+    for (let i = 0; i < asteroidCount; i++) {
+      const file = asteroidFiles[Math.floor(Math.random() * asteroidFiles.length)];
+      const loader = new GLTFLoader();
+      loader.load(file, (gltf) => {
+        const asteroid = gltf.scene;
+        // Position aléatoire dans la galaxie, mais évite le centre
+        const radius = 35 + Math.random() * 60;
+        const angle = Math.random() * Math.PI * 2;
+        const y = (Math.random() - 0.5) * 10;
+        asteroid.position.set(
+          Math.cos(angle) * radius,
+          y,
+          Math.sin(angle) * radius
+        );
+        const s = 0.7 + Math.random() * 1.2;
+        asteroid.scale.set(s, s, s);
+        asteroid.rotation.set(
+          Math.random() * Math.PI,
+          Math.random() * Math.PI,
+          Math.random() * Math.PI
+        );
+        scene.add(asteroid);
+      });
+    }
+
     return () => {
       cancelAnimationFrame(id);
       window.removeEventListener('resize', onResize);
@@ -345,6 +381,8 @@ const GalaxyScene = forwardRef(({
       scene.clear();
     };
   }, []);
+
+  useEffect(() => { cameraProgressRef.current = cameraProgress; }, [cameraProgress]);
 
   // Composant pour synchroniser la caméra react-three-fiber avec la caméra principale Three.js
   function SyncedCamera({ mainCamera }) {
@@ -368,7 +406,7 @@ const GalaxyScene = forwardRef(({
           <Canvas gl={{ alpha: true }} style={{ width: '100vw', height: '100vh', background: 'transparent', pointerEvents: 'none' }}>
             <SyncedCamera mainCamera={cameraRef.current} />
             <ambientLight intensity={0.7} />
-            {introDone && <Spaceship progress={scrollProgress * 100} scale={3} />}
+            {introDone && <Spaceship progress={scrollProgress * 100} scale={1} galaxyCurve={spaceshipCurveRef.current} />}
           </Canvas>
         </div>
         {showCredits && (

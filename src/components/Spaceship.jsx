@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-export default function Spaceship({ progress, scale = 0.6 }) {
+export default function Spaceship({ progress, scale = 0.6, galaxyCurve }) {
   const { scene } = useGLTF('/models/vaisseau.glb');
   const gradientTexture = useTexture('/models/TraiGradient.png');
   const spaceshipRef = useRef();
@@ -39,22 +39,33 @@ export default function Spaceship({ progress, scale = 0.6 }) {
 
   useEffect(() => {
     if (spaceshipRef.current) {
-      const p0 = new THREE.Vector3(-14, 10, 0);
-      const p1 = new THREE.Vector3(0, -7, 0);
-      const p2 = new THREE.Vector3(0, -6, 0);
-      const p3 = new THREE.Vector3(8, 8, 0);
-      const curve = new THREE.CubicBezierCurve3(p0, p1, p2, p3);
       const t = progress / 100;
-      const position = curve.getPoint(t);
-      const tangent = curve.getTangent(t);
-      const angle = Math.atan2(tangent.y, tangent.x);
-      spaceshipRef.current.position.copy(position);
-      const startRotationY = Math.PI / 3;
-      const endRotationY = Math.PI / 2;
-      const currentRotationY = startRotationY + t * (endRotationY - startRotationY);
-      spaceshipRef.current.rotation.set(0, currentRotationY, -angle);
+      if (galaxyCurve) {
+        // Utilise la courbe de la galaxie
+        const position = galaxyCurve.getPoint(t);
+        const tangent = galaxyCurve.getTangent(t);
+        spaceshipRef.current.position.copy(position);
+        // Orientation : lookAt dans la direction de la courbe
+        const lookAtPos = position.clone().add(tangent);
+        spaceshipRef.current.lookAt(lookAtPos);
+      } else {
+        // Fallback : courbe CubicBezier interne
+        const p0 = new THREE.Vector3(-14, 10, 0);
+        const p1 = new THREE.Vector3(0, -7, 0);
+        const p2 = new THREE.Vector3(0, -6, 0);
+        const p3 = new THREE.Vector3(8, 8, 0);
+        const curve = new THREE.CubicBezierCurve3(p0, p1, p2, p3);
+        const position = curve.getPoint(t);
+        const tangent = curve.getTangent(t);
+        const angle = Math.atan2(tangent.y, tangent.x);
+        spaceshipRef.current.position.copy(position);
+        const startRotationY = Math.PI / 3;
+        const endRotationY = Math.PI / 2;
+        const currentRotationY = startRotationY + t * (endRotationY - startRotationY);
+        spaceshipRef.current.rotation.set(0, currentRotationY, -angle);
+      }
     }
-  }, [progress]);
+  }, [progress, galaxyCurve]);
 
   return (
     <primitive

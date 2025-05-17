@@ -67,6 +67,8 @@ function App() {
   ];
 
   const combinedSections = [];
+  // Ajoute un texte d'intro avant la première planète
+  combinedSections.push({ type: 'text', text: "Lancement de l'odyssée...", index: 'intro' });
   randomTexts.forEach((p,i)=>{
     combinedSections.push({ type:'planet', data:p, index:i });
     if(i<randomTexts.length-1)
@@ -230,11 +232,65 @@ function App() {
   const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
   const scrollProgress = Math.min(Math.max(scrollY / maxScroll, 0), 1);
 
+  // Mapping précis : pour chaque section, associer un t sur la courbe (0, 0.5, 1, 1.5, ...)
+  const sectionCurveT = [];
+  let planetIdx = 0;
+  for (let i = 0; i < combinedSections.length; i++) {
+    if (combinedSections[i].type === 'planet') {
+      sectionCurveT.push(planetIdx);
+      planetIdx++;
+    } else {
+      // Si c'est le tout premier texte (intro), t=0 (début de la courbe)
+      if (i === 0) {
+        sectionCurveT.push(0);
+      } else {
+        // Texte : juste après la planète précédente (20% du chemin)
+        sectionCurveT.push(planetIdx - 1 + 0.2);
+      }
+    }
+  }
+  // Normaliser pour que t aille de 0 à 1 sur la courbe
+  const maxT = Math.max(...sectionCurveT);
+  const normalizedSectionCurveT = sectionCurveT.map(t => t / maxT);
+
+  // Calcul du t de la planète de départ pour chaque section
+  const sectionPlanetT = [];
+  planetIdx = 0;
+  for (let i = 0; i < combinedSections.length; i++) {
+    if (combinedSections[i].type === 'planet') {
+      sectionPlanetT.push(planetIdx / maxT);
+      planetIdx++;
+    } else {
+      sectionPlanetT.push((planetIdx - 1) / maxT);
+    }
+  }
+
+  // Trouver la section courante et interpoler entre t de la section courante et suivante
+  let curveProgress = 0;
+  let cameraProgress = 0;
+  if (combinedSections.length > 1) {
+    const sectionIndex = Math.floor(scrollProgress * (combinedSections.length - 1));
+    const sectionStart = sectionIndex / (combinedSections.length - 1);
+    const sectionEnd = (sectionIndex + 1) / (combinedSections.length - 1);
+    const sectionT = (scrollProgress - sectionStart) / (sectionEnd - sectionStart);
+    const tA = normalizedSectionCurveT[sectionIndex];
+    const tB = normalizedSectionCurveT[Math.min(sectionIndex + 1, normalizedSectionCurveT.length - 1)];
+    curveProgress = tA + (tB - tA) * sectionT;
+    // Caméra : si section texte, on interpole entre planète de départ et t_vaisseau
+    const isText = combinedSections[sectionIndex].type === 'text';
+    if (isText) {
+      const tPlanet = sectionPlanetT[sectionIndex];
+      cameraProgress = tPlanet + (curveProgress - tPlanet) * 0.5; // 0.5 = milieu, ajuste si besoin
+    } else {
+      cameraProgress = curveProgress;
+    }
+  }
+
   return (
     <div className="App" style={{ position:'relative' }}>
       {/* scène 3D */}
       <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
-        <GalaxyScene currentPlanetIndex={currentPlanetIndex} scrollProgress={scrollProgress}/>
+        <GalaxyScene currentPlanetIndex={currentPlanetIndex} scrollProgress={curveProgress} cameraProgress={cameraProgress}/>
       </div>
 
       {/* intro plein écran + flèche */}
