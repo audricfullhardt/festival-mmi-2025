@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,18 +6,17 @@ import * as THREE from 'three';
 export default function Spaceship({ progress }) {
   const { scene } = useGLTF('/models/vaisseau.glb');
   const gradientTexture = useTexture('/models/TraiGradient.png');
-  const ref = useRef();
-  const time = useRef(0);
+  const spaceshipRef = useRef();
+  const animationTime = useRef(0);
 
   gradientTexture.flipY = false;
   gradientTexture.wrapS = THREE.RepeatWrapping;
   gradientTexture.wrapT = THREE.RepeatWrapping;
 
-//MATERIAL PERSONNALISÉ POUR LA TRAINEE
-  const trailMaterial = new THREE.MeshStandardMaterial({
+  const shipInternalTrailMaterial = new THREE.MeshStandardMaterial({
     map: gradientTexture,
     alphaMap: gradientTexture,
-    emissive: new THREE.Color(0xff9900),
+    emissive: new THREE.Color(0xffaa00), // Un peu plus jaune
     emissiveMap: gradientTexture,
     transparent: true,
     depthWrite: false,
@@ -25,31 +24,43 @@ export default function Spaceship({ progress }) {
   });
 
   useEffect(() => {
-    const trailNames = ['BigTrail', 'SmallTrail1', 'SmallTrail2']; //MODELES QUI ONT LA TRAINEE SUR BLENDER
+    const internalTrailNames = ['BigTrail', 'SmallTrail1', 'SmallTrail2'];
     scene.traverse((child) => {
-      if (child.isMesh && trailNames.includes(child.name)) {
-        child.material = trailMaterial;
+      if (child.isMesh && internalTrailNames.includes(child.name)) {
+        child.material = shipInternalTrailMaterial;
       }
     });
-  }, [scene, trailMaterial]);
+  }, [scene, shipInternalTrailMaterial]);
 
-  useFrame(() => {
-    time.current += 0.006;
-    gradientTexture.offset.x = 1 - (time.current % 1);
+  useFrame((state, delta) => {
+    animationTime.current += 0.006;
+    gradientTexture.offset.x = 1 - (animationTime.current % 1);
   });
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.position.y = -3 + (progress / 100) * 6;
+    if (spaceshipRef.current) {
+      const p0 = new THREE.Vector3(-14, 10, 0);
+      const p1 = new THREE.Vector3(0, -7, 0);
+      const p2 = new THREE.Vector3(0, -6, 0);
+      const p3 = new THREE.Vector3(8, 8, 0);
+      const curve = new THREE.CubicBezierCurve3(p0, p1, p2, p3);
+      const t = progress / 100;
+      const position = curve.getPoint(t);
+      const tangent = curve.getTangent(t);
+      const angle = Math.atan2(tangent.y, tangent.x);
+      spaceshipRef.current.position.copy(position);
+      const startRotationY = Math.PI / 3;
+      const endRotationY = Math.PI / 2;
+      const currentRotationY = startRotationY + t * (endRotationY - startRotationY);
+      spaceshipRef.current.rotation.set(0, currentRotationY, -angle);
     }
   }, [progress]);
 
   return (
-      <primitive
-          ref={ref}
-          object={scene}
-          scale={0.6}
-          rotation={[Math.PI / -2, 0, Math.PI]}
-      />
+    <primitive
+      ref={spaceshipRef}
+      object={scene}
+      scale={0.6}
+    />
   );
 }
