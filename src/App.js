@@ -68,7 +68,7 @@ function App() {
 
   const storyTexts = [
     "Alors que son module quittait l'orbite de Mornis, Kaël resta silencieux. Il ne savait plus s'il fuyait le Néant ou s'il courait vers quelque chose. Son souffle était court, ses paupières lourdes, mais un second signal s'éveilla dans la nuit noire. Une autre chance. Une autre planète.",
-    "Lorsqu'il quitta Cryon, Kaël sentit son propre esprit se fissurer. Il passait d'un monde mort à un autre, comme si l'univers tout entier lui refusait l'existence. Il programma le module pour suivre la prochaine trace de signal, sans y croire vraiment. Il ne priait plus. Il attendait.\n\nLe voyage épuisa ses dernières réserves. Ses mains tremblaient lorsqu'il capta un signal clair, cette fois. Un chant étrange, rythmique. Il suivit le signal, et Virelia s'éleva devant lui comme une oasis suspendue : une planète vivante, lumineuse, enveloppée d'une atmosphère douce. En orbite, une cité flottante."
+    "Kaël quitta Cryon, épuisé, l'esprit fissuré par la solitude. Il programma le module pour suivre un nouveau signal, sans y croire vraiment. Mais bientôt, un chant étrange résonna dans la nuit. Virelia apparut, lumineuse, vivante, comme une oasis suspendue dans le vide."
   ];
 
   // 1. Déclare combinedSections
