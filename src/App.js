@@ -25,11 +25,6 @@ function App() {
   const [titleOp,     setTitleOp]     = useState(0);
   const [titleTransf, setTitleTransf] = useState('translateY(20px)');
 
-  const [camPos,    setCamPos]    = useState({ x: 3, y: 3, z: 3 });
-  const [camTarget, setCamTarget] = useState({ x: 0, y: 0, z: 0 });
-  const [camPosTarget, setCamPosTarget] = useState({ x: 3, y: 3, z: 3 });
-  const [camTargetTarget, setCamTargetTarget] = useState({ x: 0, y: 0, z: 0 });
-  
   // Flag pour indiquer que l'animation est terminée
   const [animationFinished, setAnimationFinished] = useState(false);
 
@@ -41,6 +36,8 @@ function App() {
 
   // Pour le fade-in du bouton 'Commencer le voyage'
   const [showStartBtn, setShowStartBtn] = useState(false);
+
+  const [currentPlanetIndex, setCurrentPlanetIndex] = useState(0);
 
   /* data planètes & textes ----------------------------------------- */
   const randomTexts = [
@@ -135,19 +132,29 @@ function App() {
     const onScroll=()=>{
       const max=document.body.scrollHeight-window.innerHeight;
       if(max<=0) return;
-      const slowFactor = 0.5; // 0.5 = 2x plus lent, 0.25 = 4x plus lent
-      const tRaw = (window.scrollY / max) * slowFactor;
-      const t = Math.min(tRaw, 1);
-      // Position de la caméra sur la courbe
-      const pos = cameraCurve.getPoint(t);
-      setCamPosTarget({ x: pos.x, y: pos.y, z: pos.z });
-
-      // Look ahead : on regarde un peu plus loin sur la courbe
-      const lookT = Math.min(t + 0.03, 1); // 0.03 = distance d'anticipation
-      const lookAt = cameraCurve.getPoint(lookT);
-      setCamTargetTarget({ x: lookAt.x, y: lookAt.y, z: lookAt.z });
       setScrollY(window.scrollY);
       setHideUI(window.scrollY>50);
+
+      // Trouver la section planète la plus proche du centre du viewport
+      const planetSections = combinedSections
+        .map((sec, i) => ({...sec, domIndex: i}))
+        .filter(sec => sec.type === 'planet');
+      const viewportCenter = window.scrollY + window.innerHeight/2;
+      let minDist = Infinity;
+      let idx = 0;
+      planetSections.forEach((sec, i) => {
+        const el = sectionsRef.current[sec.domIndex];
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const sectionCenter = rect.top + window.scrollY + rect.height/2;
+          const dist = Math.abs(sectionCenter - viewportCenter);
+          if (dist < minDist) {
+            minDist = dist;
+            idx = i;
+          }
+        }
+      });
+      setCurrentPlanetIndex(idx);
     };
     
     // Mettre à jour l'UI et la position de la caméra initialement
@@ -155,36 +162,7 @@ function App() {
     
     window.addEventListener('scroll',onScroll,{passive:true});
     return()=>window.removeEventListener('scroll',onScroll);
-  },[animationFinished]);
-
-  // Animation cinématique de la caméra (lerp)
-  useEffect(() => {
-    if (!animationFinished) return;
-    let raf;
-    function animate() {
-      setCamPos(prev => {
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const t = 0.08; // Plus petit = plus lent
-        return {
-          x: lerp(prev.x, camPosTarget.x, t),
-          y: lerp(prev.y, camPosTarget.y, t),
-          z: lerp(prev.z, camPosTarget.z, t)
-        };
-      });
-      setCamTarget(prev => {
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const t = 0.08;
-        return {
-          x: lerp(prev.x, camTargetTarget.x, t),
-          y: lerp(prev.y, camTargetTarget.y, t),
-          z: lerp(prev.z, camTargetTarget.z, t)
-        };
-      });
-      raf = requestAnimationFrame(animate);
-    }
-    raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
-  }, [animationFinished, camPosTarget, camTargetTarget]);
+  },[animationFinished, combinedSections]);
 
   /* helper scrollTo ------------------------------------------------- */
   const scrollTo=(idx)=>{
@@ -252,7 +230,7 @@ function App() {
     <div className="App" style={{ position:'relative' }}>
       {/* scène 3D */}
       <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
-        <GalaxyScene cameraPosition={camPos} cameraTarget={camTarget}/>
+        <GalaxyScene currentPlanetIndex={currentPlanetIndex}/>
       </div>
 
       {/* intro plein écran + flèche */}

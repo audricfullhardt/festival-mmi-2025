@@ -106,9 +106,9 @@ import {
   
       // Nouvelle distribution des planètes (arc de cercle dans l'espace)
       const planetCount = 3;
-      const PLANET_RADIUS = 18; // Distance du centre
+      const PLANET_RADIUS = 40; // Distance du centre (augmentée)
       const PLANET_HEIGHT = 2;
-      const PLANET_LOOK_OFFSET = 10; // Distance entre la courbe et la planète
+      const PLANET_LOOK_OFFSET = 25; // Distance entre la courbe et la planète (augmentée)
       const planetBasePositions = Array.from({length: planetCount}, (_, i) => {
         const angle = (i / (planetCount - 1)) * Math.PI; // arc de cercle
         const x = Math.cos(angle) * PLANET_RADIUS;
@@ -138,35 +138,23 @@ import {
       /* MAJ position / look-ahead après intro ------------------------ */
       useEffect(() => {
         if (!introDone || !cameraRef.current) return;
-  
-        /* position */
+        // Focus direct sur la planète courante
+        const planetPos = planetPositions[currentPlanetIndex] || planetPositions[0];
+        const center = new THREE.Vector3(0, 0, 0);
+        const dir = planetPos.clone().sub(center).normalize();
+        const cameraDistance = 12;
+        const cameraPos = planetPos.clone().add(dir.clone().multiplyScalar(cameraDistance));
         gsap.to(cameraRef.current.position, {
-          ...cameraPosition,
-          duration: 0.9,
-          ease: 'power2.out'
+          x: cameraPos.x,
+          y: cameraPos.y,
+          z: cameraPos.z,
+          duration: 3,
+          ease: 'power3.inOut',
+          onUpdate: () => {
+            cameraRef.current.lookAt(planetPos);
+          }
         });
-  
-        /* Utiliser directement cameraTarget si fourni */
-        if (cameraTarget) {
-          targetRef.current.set(cameraTarget.x, cameraTarget.y, cameraTarget.z);
-        } else {
-          /* look-ahead (fallback) */
-          const last = cameraRef.current.userData.lastPos || cameraPosition;
-          const dir = new THREE.Vector3(
-            cameraPosition.x - last.x,
-            cameraPosition.y - last.y,
-            cameraPosition.z - last.z
-          );
-          if (dir.length() > 0.01) dir.normalize();
-          const ahead = {
-            x: cameraPosition.x + dir.x * 2,
-            y: cameraPosition.y + dir.y * 2,
-            z: cameraPosition.z + dir.z * 2
-          };
-          targetRef.current.set(ahead.x, ahead.y, ahead.z);
-        }
-        cameraRef.current.userData.lastPos = { ...cameraPosition };
-      }, [cameraPosition, cameraTarget, introDone]);
+      }, [currentPlanetIndex, introDone]);
   
       /* INIT THREE ---------------------------------------------------- */
       useEffect(() => {
@@ -299,31 +287,7 @@ import {
         const CAMERA_OFFSET = 0.07; // Ajuste pour le recul souhaité
         const tick = () => {
           if (introDone) {
-            const t = Math.max(0, Math.min(1, cameraT));
-            const tCam = Math.max(0, t - CAMERA_OFFSET);
-            const pos = cameraCurve.getPoint(tCam);
-            camera.position.copy(pos);
-            // Trouver l'étape la plus proche
-            let closestIdx = 0, minDist = 1;
-            const planetTs = planetPositions.length === 1 ? [0] : Array.from({length: planetPositions.length}, (_, i) => i/(planetPositions.length-1));
-            planetTs.forEach((pt, i) => {
-              const d = Math.abs(pt - t);
-              if (d < minDist) { minDist = d; closestIdx = i; }
-            });
-            const lookAt = planetPositions[closestIdx];
-            camera.lookAt(lookAt);
-            // Anime la scale de la planète courante
-            planetMeshRefs.current.forEach((ref, i) => {
-              if (ref.current) {
-                gsap.to(ref.current.scale, {
-                  x: i === closestIdx ? 1.5 : 1,
-                  y: i === closestIdx ? 1.5 : 1,
-                  z: i === closestIdx ? 1.5 : 1,
-                  duration: 0.7,
-                  ease: 'power2.out'
-                });
-              }
-            });
+            // Ne rien faire ici : la caméra est animée dans le useEffect sur currentPlanetIndex
           } else {
             controls.update();
           }
@@ -350,7 +314,7 @@ import {
           renderer.dispose();
           scene.clear();
         };
-      }, [currentPlanetIndex]);
+      }, []);
   
       /* JSX ----------------------------------------------------------- */
       return (
