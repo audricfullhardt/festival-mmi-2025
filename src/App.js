@@ -2,7 +2,7 @@ import TiltCard        from './components/TiltCard';         // toujours dispo
 import Button          from './components/Button.jsx';
 import PlanetSpec      from './components/PlanetSpec';
 import GalaxyScene     from './GalaxyScene';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Loader3D        from './components/Loader3D.jsx';
 import PlanetSection   from './components/PlanetSection';
 import TextSection     from './components/TextSection';
@@ -297,6 +297,14 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
     }
   }, [introAnimating, t_planet1]);
 
+  // État pour l'écran de fin
+  const [showEnding, setShowEnding] = useState(false);
+  const [endingTypingDone, setEndingTypingDone] = useState(false);
+  const endingText = `Le Néant n'était pas un lieu, mais une boucle. Kaël observa la courbure des étoiles, pensa à son équipage, aux mondes traversés. Il aurait pu rester, mais quelque chose en lui refusait de s'arrêter là. Il remonta à bord, saisit les commandes, le regard fixé sur l'horizon. Tant qu'il restait une étoile à suivre, il continuerait.`;
+
+  // Handler pour la dernière flèche
+  const handleShowEnding = useCallback(() => setShowEnding(true), []);
+
   /* rendu ----------------------------------------------------------- */
   if(loading) return <Loader3D progress={animatedProgress} fadeOut={fadeOut}/>;
 
@@ -415,7 +423,7 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
               cardTitle={sec.data.title}
               cardContent={sec.data.cardContent}
               index={sec.index}
-              onNavigateNext={()=>scrollTo(i+1)}
+              onNavigateNext={i === combinedSections.length-1 ? handleShowEnding : ()=>scrollTo(i+1)}
               invertLayout={sec.index%2!==0}
               isVisible={scrollY>window.innerHeight*0.5+i*window.innerHeight}
             />
@@ -428,6 +436,24 @@ Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis
           )}
         </section>
       ))}
+
+      {/* Overlay de fin */}
+      {showEnding && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'black', color: 'white', zIndex: 9999,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'Orbitron', sans-serif", fontSize: '1.3rem', letterSpacing: 1.2, padding: 32
+        }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', minHeight: 350 }}>
+            <TextSection text={endingText} isVisible={true} typingEffect={true} typingSpeed={24} onTypingEnd={() => setEndingTypingDone(true)} />
+          </div>
+          <div style={{ marginTop: 48 }}>
+            {endingTypingDone && (
+              <Button text="Recommencer l'aventure" onClick={() => window.location.reload()} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

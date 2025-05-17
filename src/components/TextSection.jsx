@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const TextSection = ({ text, onNavigateNext, isVisible }) => {
+const TextSection = ({ text, onNavigateNext, isVisible, onTypingEnd }) => {
   const [animateIn, setAnimateIn] = useState(false);
   const [textIndex, setTextIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const sectionRef = useRef(null);
   const fullTextRef = useRef(null);
+  const typingEndedRef = useRef(false);
   
   // Effet pour l'animation de visibilité basée sur le défilement
   useEffect(() => {
@@ -19,6 +20,7 @@ const TextSection = ({ text, onNavigateNext, isVisible }) => {
       setAnimateIn(false);
       setTextIndex(0);
       setDisplayedText('');
+      typingEndedRef.current = false; // Reset pour permettre l'effet à chaque apparition
     }
   }, [isVisible]);
   
@@ -31,8 +33,11 @@ const TextSection = ({ text, onNavigateNext, isVisible }) => {
       }, 30); // Vitesse de typage
       
       return () => clearTimeout(typingTimer);
+    } else if (animateIn && textIndex >= text.length && onTypingEnd && !typingEndedRef.current) {
+      typingEndedRef.current = true;
+      onTypingEnd();
     }
-  }, [animateIn, textIndex, text]);
+  }, [animateIn, textIndex, text, onTypingEnd]);
   
   // Observer l'intersection avec le viewport
   useEffect(() => {
