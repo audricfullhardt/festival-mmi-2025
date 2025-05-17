@@ -74,7 +74,7 @@ const TextSection = ({ text, onNavigateNext, isVisible }) => {
     >
       <div 
         style={{ 
-          maxWidth: '800px',
+          maxWidth: '1200px',
           padding: '20px',
           textAlign: 'center',
           opacity: animateIn ? 1 : 0,

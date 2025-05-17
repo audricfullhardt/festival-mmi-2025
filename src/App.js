@@ -47,34 +47,42 @@ function App() {
   /* data planètes & textes ----------------------------------------- */
   const randomTexts = [
     {
-      title: 'Pianeta Rossa',
+      title: 'Mornis',
       cardContent:
-        "Monde aride aux vastes déserts et canyons. L'atmosphère y est ténue mais riche en oxyde de fer …",
-      planetSpec: 'Diamètre : 6 792 km | Gravité : 0,38 g | Atmosphère : CO₂ 95 %'
+        "La planète Mornis n'était qu'un astre pâle, cerné de structures cristallines violettes qui diffractaient la lumière d'un soleil lointain. En approchant, Kaël sentit la tension de l'atmosphère : l'air vibrait, chargé d'électricité et de particules inconnues. Le sol était instable, formé de plaques anguleuses qui semblaient flotter au-dessus d'un abîme lumineux. Aucun signe de vie, mais une énergie étrange, presque hostile, imprégnait chaque recoin. Kaël ne s'attarda pas : ici, la survie n'était pas permise.",
+      planetSpec: `Diamètre : 14 200 km | Gravité : 0,62 g | Atmosphère : Ionisée | Hostilité : Élevée | Habité : Non`
     },
     {
-      title: 'Nebulosa Azure',
+      title: 'Cryon',
       cardContent:
-        "Géante gazeuse bleu-turquoise parcourue d'éclairs titanesques …",
-      planetSpec: 'Diamètre : 49 500 km | Gravité : 1,12 g | Atmosphère : H₂, He'
+        "Sur Cryon, la lumière du soleil ne perçait pas la glace. Il descendit dans les crevasses, cherchant un abri. Une vieille balise s'y trouvait, scellée dans une prison de givre. Il passa des heures à la libérer, à écouter ses fichiers corrompus. Des voix brisées, des coordonnées vides. Un autre naufragé avait été là, avant lui. Il ne retrouva que son silence. Lorsqu'une tempête électromagnétique s'abattit, il courut vers son module, échappant de justesse au piège glacial de la planète.",
+      planetSpec: 'Diamètre : 12 800 km | Gravité : 0,85 g | Atmosphère : N₂, O₂, traces de CO₂ | Hostilité : Moyenne | Habité : Non'
     },
     {
-      title: 'Chrysalis Prime',
+      title: 'Virelia',
       cardContent:
-        "Monde tropical à montagnes flottantes et faune volante …",
-      planetSpec: 'Diamètre : 12 104 km | Gravité : 0,91 g | Atmosphère : N₂, O₂'
+        "Les habitants, des êtres gracieux aux yeux brillants, l'accueillirent sans peur. Ils écoutèrent son histoire. Ils réparèrent son vaisseau. Ils lui offrirent une carte, une direction, une chance.\n\nMais avant de partir, Kaël interrogea leurs archives. Ce qu'il y découvrit le frappa en plein cœur : chaque cycle stellaire, une forme traverse le Néant. Toujours la même. Toujours seul. Toujours à la recherche d'un foyer.\n\nC'était lui. Encore. Encore. Encore.",
+      planetSpec: 'Diamètre : 15 600 km | Gravité : 0,95 g | Atmosphère : N₂, O₂, traces de gaz nobles | Hostilité : Faible | Habité : Oui'
     }
   ];
 
   const storyTexts = [
-    "Notre vaisseau s'éloigne de Pianeta Rossa …",
-    "Après avoir navigué à travers les anneaux de Nebulosa Azure …"
+    "Alors que son module quittait l'orbite de Mornis, Kaël resta silencieux. Il ne savait plus s'il fuyait le Néant ou s'il courait vers quelque chose. Son souffle était court, ses paupières lourdes, mais un second signal s'éveilla dans la nuit noire. Une autre chance. Une autre planète.",
+    "Lorsqu'il quitta Cryon, Kaël sentit son propre esprit se fissurer. Il passait d'un monde mort à un autre, comme si l'univers tout entier lui refusait l'existence. Il programma le module pour suivre la prochaine trace de signal, sans y croire vraiment. Il ne priait plus. Il attendait.\n\nLe voyage épuisa ses dernières réserves. Ses mains tremblaient lorsqu'il capta un signal clair, cette fois. Un chant étrange, rythmique. Il suivit le signal, et Virelia s'éleva devant lui comme une oasis suspendue : une planète vivante, lumineuse, enveloppée d'une atmosphère douce. En orbite, une cité flottante."
   ];
 
   // 1. Déclare combinedSections
   const combinedSections = [];
   // Ajoute un texte d'intro avant la première planète
-  combinedSections.push({ type: 'text', text: "Lancement de l'odyssée...", index: 'intro' });
+  combinedSections.push({
+    type: 'text',
+    text: `Kaël rouvre les yeux dans le silence glacé du cockpit secondaire de l'Odyssey-42. Autour de lui, tout est immobile : les alarmes se sont tues, les parois vibrent faiblement. De l'équipage, il ne reste que des souvenirs, enregistrés dans la mémoire du vaisseau.
+
+Une lumière blanche, une distorsion brutale… puis le Néant. L'Odyssey-42 a été arraché de sa trajectoire, projeté dans une région inconnue du cosmos, sans étoiles ni repères.
+
+Désorienté mais déterminé, Kaël active la navigation manuelle. Rien… puis, soudain, un signal. Ce sera sa première destination.`,
+    index: 'intro'
+  });
   randomTexts.forEach((p,i)=>{
     combinedSections.push({ type:'planet', data:p, index:i });
     if(i<randomTexts.length-1)

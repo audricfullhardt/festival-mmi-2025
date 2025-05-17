@@ -78,6 +78,25 @@ const PlanetSection = ({
         return () => observer.disconnect();
     }, []);
 
+    useEffect(() => {
+        if (!animateIn) return;
+        // Gestion du hover global pour éviter le stuck
+        const handleMouseUp = () => setHovered(false);
+        const handleMouseLeave = () => setHovered(false);
+        // On cible le canvas Three.js
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            canvas.addEventListener('mouseleave', handleMouseLeave);
+        }
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            if (canvas) {
+                canvas.removeEventListener('mouseleave', handleMouseLeave);
+            }
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [animateIn]);
+
     return (
         <div
             ref={sectionRef}
@@ -161,18 +180,21 @@ const PlanetSection = ({
                 </Canvas>
 
                 {/* Spécifications de la planète */}
-                {hovered && (
-                  <div style={{
-                      position: 'fixed',
-                      top: '40%',
-                      left: '70%',
-                      transform: 'translate(-50%, -50%)',
-                      zIndex: 2000,
-                      pointerEvents: 'none',
-                  }}>
-                      <PlanetSpec title={planetName} text={planetDescription} />
-                  </div>
-                )}
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: '40%',
+                        left: '70%',
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 2000,
+                        pointerEvents: hovered ? 'auto' : 'none',
+                        opacity: hovered ? 1 : 0,
+                        transition: 'opacity 0.5s cubic-bezier(.4,1,.4,1), filter 0.5s cubic-bezier(.4,1,.4,1)',
+                        willChange: 'opacity, filter',
+                    }}
+                >
+                    <PlanetSpec title={planetName} text={planetDescription} />
+                </div>
             </div>
 
             {/* Carte d'informations */}

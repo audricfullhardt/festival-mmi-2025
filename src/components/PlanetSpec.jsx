@@ -56,7 +56,7 @@ const PlanetSpec = ({ title, text }) => {
   const textStyle = {
     color: '#b2ffff',
     fontFamily: "'Orbitron', sans-serif",
-    fontSize: '0.72rem',
+    fontSize: '0.53rem',
     textAlign: 'center',
     overflowY: 'auto',
     maxHeight: '170px',
@@ -133,7 +133,7 @@ const PlanetSpec = ({ title, text }) => {
         <div style={scanlineStyle}></div>
         <div style={reflectionStyle}></div>
         <h3 style={titleStyle}>{title}</h3>
-        <p style={textStyle}>{text}</p>
+        <p className='scroll' style={textStyle}>{text}</p>
       </div>
     </>
   );

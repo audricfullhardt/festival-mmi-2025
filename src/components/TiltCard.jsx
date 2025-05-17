@@ -140,7 +140,7 @@ const TiltCard = ({ title, content }) => {
           letterSpacing: '0.5px',
           lineHeight: '1.6',
           textAlign: 'center',
-          overflowY: 'auto',
+          overflowY: 'scroll',
           maxHeight: '390px',
           textShadow: '0 0 6px #00fff7, 0 0 12px #00bfff',
           zIndex: 2,
@@ -150,6 +150,7 @@ const TiltCard = ({ title, content }) => {
           boxShadow: '0 0 12px #00fff733',
           maxWidth: '90%',
           alignSelf: 'center',
+          scrollbarWidth: 'none'
         }}>{content}</p>}
       </div>
     </>
