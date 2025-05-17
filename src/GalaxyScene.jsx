@@ -343,9 +343,7 @@ const GalaxyScene = forwardRef(({
     const asteroidFiles = [
       '/models/asteroid1.glb',
       '/models/asteroid2.glb',
-      '/models/asteroid3.glb',
-      '/models/asteroid4.glb',
-      '/models/asteroid5.glb'
+      '/models/asteroid3.glb'
     ];
     const asteroidCount = 40;
     for (let i = 0; i < asteroidCount; i++) {

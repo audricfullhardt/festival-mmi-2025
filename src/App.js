@@ -11,11 +11,16 @@ import { gsap } from 'gsap';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 gsap.registerPlugin(ScrollToPlugin);
 
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
 function App() {
   /* loader ---------------------------------------------------------- */
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
+  const [animatedProgress, setAnimatedProgress] = useState(0);
 
   /* UI & caméra ----------------------------------------------------- */
   const [scrollY, setScrollY] = useState(0);
@@ -88,6 +93,18 @@ function App() {
   },[loading]);
 
   useEffect(()=>{ if(fadeOut){const id=setTimeout(()=>setLoading(false),600);return()=>clearTimeout(id);} },[fadeOut]);
+
+  // Ajout de l'interpolation douce pour animatedProgress
+  useEffect(() => {
+    if (!loading) return;
+    let raf;
+    const animate = () => {
+      setAnimatedProgress(prev => prev + (progress - prev) * 0.18);
+      raf = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => cancelAnimationFrame(raf);
+  }, [progress, loading]);
 
   /* titre après intro ---------------------------------------------- */
   useEffect(()=>{
@@ -226,7 +243,7 @@ function App() {
   }, [animationFinished]);
 
   /* rendu ----------------------------------------------------------- */
-  if(loading) return <Loader3D progress={progress} fadeOut={fadeOut}/>;
+  if(loading) return <Loader3D progress={animatedProgress} fadeOut={fadeOut}/>;
 
   // Calcul du scroll progress (0 = haut, 1 = bas)
   const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);

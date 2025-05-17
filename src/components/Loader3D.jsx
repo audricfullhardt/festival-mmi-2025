@@ -131,7 +131,7 @@ const Loader3D = ({ progress, fadeOut }) => (
     </div>
     <div className="loader3d-percentage">
       <div className="percentage-digits">
-        {progress.toString().padStart(3, '0').split('').map((digit, index) => (
+        {Math.round(progress).toString().padStart(3, '0').split('').map((digit, index) => (
           <span key={index} className="digit">{digit}</span>
         ))}
       </div>

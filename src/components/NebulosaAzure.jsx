@@ -49,6 +49,8 @@ export default function NebulosaAzure(props) {
             position={[0, 0, 0]}
             rotation={[0, 0, 0]}
             {...props}
+            onPointerOver={props.onPointerOver}
+            onPointerOut={props.onPointerOut}
         />
     );
 }

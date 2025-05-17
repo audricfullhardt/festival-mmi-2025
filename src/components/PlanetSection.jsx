@@ -125,11 +125,20 @@ const PlanetSection = ({
                     </mesh>
 
                     {index === 0 ? (
-                        <PianettaRossa />
+                        <PianettaRossa 
+                          onPointerOver={() => setHovered(true)} 
+                          onPointerOut={() => setHovered(false)}
+                        />
                     ) : index === 1 ? (
-                        <NebulosaAzure />
+                        <NebulosaAzure 
+                          onPointerOver={() => setHovered(true)} 
+                          onPointerOut={() => setHovered(false)}
+                        />
                     ) : (
-                        <ChrysalisPrime />
+                        <ChrysalisPrime 
+                          onPointerOver={() => setHovered(true)} 
+                          onPointerOut={() => setHovered(false)}
+                        />
                     )}
 
                     <OrbitControls
@@ -152,16 +161,18 @@ const PlanetSection = ({
                 </Canvas>
 
                 {/* Spécifications de la planète */}
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    [invertLayout ? 'right' : 'left']: hovered ? '60%' : '55%',
-                    transform: 'translateY(-50%)',
-                    opacity: hovered ? 1 : 0,
-                    transition: 'all 0.3s ease-in-out'
-                }}>
-                    <PlanetSpec title={planetName} text={planetDescription} />
-                </div>
+                {hovered && (
+                  <div style={{
+                      position: 'fixed',
+                      top: '40%',
+                      left: '70%',
+                      transform: 'translate(-50%, -50%)',
+                      zIndex: 2000,
+                      pointerEvents: 'none',
+                  }}>
+                      <PlanetSpec title={planetName} text={planetDescription} />
+                  </div>
+                )}
             </div>
 
             {/* Carte d'informations */}
