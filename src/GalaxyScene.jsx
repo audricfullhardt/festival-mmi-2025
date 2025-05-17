@@ -204,7 +204,7 @@ const GalaxyScene = forwardRef(({
         }
 
         model.position.copy(planetPositions[i]);
-        model.scale.set(1.5, 1.5, 1.5);
+        model.scale.set(2.2, 2.2, 2.2);
         scene.add(model);
       });
     });
@@ -358,7 +358,8 @@ const GalaxyScene = forwardRef(({
           y,
           Math.sin(angle) * radius
         );
-        const s = 0.7 + Math.random() * 1.2;
+        // Taille des astéroïdes : min 0.5, max 1.0
+        const s = 0.5 + Math.random() * 0.5;
         asteroid.scale.set(s, s, s);
         asteroid.rotation.set(
           Math.random() * Math.PI,
